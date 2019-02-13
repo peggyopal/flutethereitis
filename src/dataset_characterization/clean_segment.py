@@ -1,7 +1,7 @@
 """
 File Name: clean_segment.py
 
-Authors: Peggy Anderson & Kyle Seidenthal 
+Authors: Peggy Anderson & Kyle Seidenthal
 
 Date: 12-02-2019
 
@@ -17,7 +17,7 @@ from tqdm import tqdm
 import argparse
 import sys
 
-PATH_TO_DATA_FOLDER = "../../data"
+PATH_TO_CLEAN_DATA_FOLDER = "../../data/clean_data"
 
 # Parse command line args to get file name
 parser = argparse.ArgumentParser(description="Clean a given set of segments.")
@@ -34,7 +34,7 @@ if args.segment_csv[-4:] != ".csv":
 segment_path = args.segment_csv
 
 # Read the cleaned version of the labels
-clean_labels = pd.read_csv(os.path.join(PATH_TO_DATA_FOLDER, "clean_labels.csv"))
+clean_labels = pd.read_csv(os.path.join(PATH_TO_CLEAN_DATA_FOLDER, "class_labels_indicies_cleaned.csv"))
 
 # Get a list of the codes for the labels that we want to keep data for
 string_codes = []
@@ -44,17 +44,18 @@ for index, row in tqdm(clean_labels.iterrows(), total=clean_labels.shape[0]):
 
 # Load the segment data that was specified
 segments = utils.create_segment_dataframe(segment_path)
-    
+
 clean_segments = pd.DataFrame()
 
 # Keep matches for the labels that we are keeping
 for string in tqdm(string_codes):
     hits = segments[segments["positive_labels"].str.lower().str.contains(string.lower())]
+    # print(hits)
+    # break
+    # TODO: change labels
     clean_segments = clean_segments.append(hits)
 
 # Save it
-outname = args.segment_csv[:-4] + "_cleaned.csv"
+outname = PATH_TO_CLEAN_DATA_FOLDER + "/" + args.segment_csv.lstrip('../../data/') + "_cleaned.csv"
 
 clean_segments.to_csv(outname)
-    
-
