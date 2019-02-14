@@ -50,10 +50,12 @@ clean_segments = pd.DataFrame()
 # Keep matches for the labels that we are keeping
 for string in tqdm(string_codes):
     hits = segments[segments["positive_labels"].str.lower().str.contains(string.lower())]
-    # print(hits)
-    # break
-    # TODO: change labels
     clean_segments = clean_segments.append(hits)
+
+for index, row in clean_segments.iterrows():
+    positive_labels = row["positive_labels"].lstrip("\"").rstrip("\"").split(",")
+    positive_labels = [x for x in positive_labels if x in string_codes]
+    clean_segments.at[index, "positive_labels"] = ",".join(positive_labels)
 
 # Save it
 outname = PATH_TO_CLEAN_DATA_FOLDER + "/" + args.segment_csv.lstrip('../../data/')[:-4] + "_cleaned.csv"
