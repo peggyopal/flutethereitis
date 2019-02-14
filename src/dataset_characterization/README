@@ -1,10 +1,11 @@
 # Data Characterization
 We are using Google's AudioSet Dataset to train, test, and evaluate our CMPT820
-machine learning class project. Since our project is focused on the
-identification of musical instruments there is a lot of data in Google's Dataset
-that we do not require, such as snoring, alarms, vehicle noise, etc. Therefore,
-there are scripts in this directory that are designed to clean the data to only
-include relevant audio samples.
+machine learning class project. This dataset contains 2.084,320 10-second
+annotated YouTube videos. Since our project is focused on the identification of
+musical instruments, there is a lot of data in Google's Dataset that we do not
+require, such as snoring, alarms, vehicle noise, etc. Therefore, there are
+scripts in this directory that are designed to clean the data to only include
+relevant audio samples.
 
 ## How to clean the data
 1. run `./clean_it_all`
