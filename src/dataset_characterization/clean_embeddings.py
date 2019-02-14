@@ -5,7 +5,7 @@ Authors: Peggy Anderson & Kyle Seidenthal
 
 Date: 12-02-2019
 
-Last Modified: Thu 14 Feb 2019 08:12:50 AM CST
+Last Modified: Thu 14 Feb 2019 08:31:41 AM CST
 
 Description: A script to sort the audio embedding feature data into ones we want and ones we dont
 
@@ -17,6 +17,7 @@ import os
 import tensorflow as tf
 from tqdm import tqdm
 from shutil import copyfile
+import multiprocessing as mp
 
 PATH_TO_DATA_FOLDER = "../../data"
 LABELS_TO_KEEP = os.path.join(PATH_TO_DATA_FOLDER,"clean_data" , "class_labels_indicies_cleaned.csv")
@@ -25,6 +26,7 @@ LABELS_TO_KEEP = os.path.join(PATH_TO_DATA_FOLDER,"clean_data" , "class_labels_i
 parser = argparse.ArgumentParser(description="Clean a given set of segments.")
 
 MAIN_DATA_DIR = "../../data/"
+NUM_WORKERS = mp.cpu_count()
 
 parser.add_argument('data_dir', help="The path to the directory containing the data set.")
 parser.add_argument('clean_csv', help="The path to the csv to use to get the labels from.")
@@ -64,10 +66,14 @@ sess = tf.Session()
 
 clean_labels = pd.read_csv(LABELS_TO_KEEP)
 
-# Run through the tensor records and remove any instances of labels that we do not want
-for tfrecord in tqdm(os.listdir(clean_outdir)):
-    data = {}
+
+def process_tfrecords(tfrecord):
+    """
+    Process the given tensorflow record file to remove unecessary labels
     
+    :param file: The file to process
+    :returns: None, but the file will be updated to only include relevant labels
+    """
     cleaned_examples = []
     
     # Get each example in the record and check its labels
@@ -114,10 +120,17 @@ for tfrecord in tqdm(os.listdir(clean_outdir)):
                   
             )  
             cleaned_examples.append(example)
+            print(example)
     # Remove the old file
     os.remove(os.path.join(clean_outdir, tfrecord))    
     # Save it
     with tf.python_io.TFRecordWriter(os.path.join(clean_outdir, tfrecord)) as writer:
         for examp in cleaned_examples:
             writer.write(examp.SerializeToString())
+
+
+# Run through the tensor records and remove any instances of labels that we do not want
+pool = mp.Pool(NUM_WORKERS)
+result = list(tqdm(pool.imap(process_tfrecords, os.listdir(clean_outdir)), total=len(os.listdir(clean_outdir))))
+    
 
