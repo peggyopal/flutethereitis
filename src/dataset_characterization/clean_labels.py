@@ -5,7 +5,7 @@ Authors: Peggy Anderson & Kyle Seidenthal
 
 Date: 12-02-2019
 
-Last Modified: Tue 12 Feb 2019 05:58:07 PM CST
+Last Modified: Thu 14 Feb 2019 08:53:30 AM CST
 
 Description: A script to remove labels that are not related to musical instruments
 
@@ -26,7 +26,7 @@ LABELS_CSV =  os.path.join(PATH_TO_DATA_FOLDER, "class_labels_indices.csv")
 # "French Horn", "Theremin", "Timpani", "Rattle", "Jingle Bell", "Zither", "Rimshot","Harpsichord", "Maraca", "Yodeling",
 # "Tubular Bells", "Gong", "Violin", "Fiddle"]
 
-labels_to_keep = ["flute"]
+labels_to_keep = ["flute", "didgeridoo"]
 
 labels_df = pd.read_csv(LABELS_CSV)
 

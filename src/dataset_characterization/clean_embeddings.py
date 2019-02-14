@@ -5,7 +5,7 @@ Authors: Peggy Anderson & Kyle Seidenthal
 
 Date: 12-02-2019
 
-Last Modified: Thu 14 Feb 2019 08:31:41 AM CST
+Last Modified: Thu 14 Feb 2019 08:48:47 AM CST
 
 Description: A script to sort the audio embedding feature data into ones we want and ones we dont
 
@@ -120,7 +120,7 @@ def process_tfrecords(tfrecord):
                   
             )  
             cleaned_examples.append(example)
-            print(example)
+    
     # Remove the old file
     os.remove(os.path.join(clean_outdir, tfrecord))    
     # Save it
