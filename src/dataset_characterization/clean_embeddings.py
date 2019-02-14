@@ -5,7 +5,7 @@ Authors: Peggy Anderson & Kyle Seidenthal
 
 Date: 12-02-2019
 
-Last Modified: Wed 13 Feb 2019 09:48:17 PM CST
+Last Modified: Thu 14 Feb 2019 08:12:50 AM CST
 
 Description: A script to sort the audio embedding feature data into ones we want and ones we dont
 
@@ -69,7 +69,8 @@ for tfrecord in tqdm(os.listdir(clean_outdir)):
     data = {}
     
     cleaned_examples = []
-
+    
+    # Get each example in the record and check its labels
     for example in tf.python_io.tf_record_iterator(os.path.join(clean_outdir, tfrecord)):
         tf_example = tf.train.Example.FromString(example)
         vid_id = tf_example.features.feature['video_id'].bytes_list.value[0].decode(encoding='UTF-8')
@@ -77,17 +78,12 @@ for tfrecord in tqdm(os.listdir(clean_outdir)):
         end_time_seconds = tf_example.features.feature['end_time_seconds']
         
         hits = segment[segment["# YTID"].str.contains(vid_id)]
-         
+        
+        
         if not hits.empty:
             example_label = list(np.asarray(tf_example.features.feature['labels'].int64_list.value))
             tf_seq_example = tf.train.SequenceExample.FromString(example)
-            n_frames = len(tf_seq_example.feature_lists.feature_list['audio_embedding'].feature)
     
-            audio_frame = []
-            
-            for i in range(n_frames):
-                audio_frame.append(tf.cast(tf.decode_raw(tf_seq_example.feature_lists.feature_list['audio_embedding'].feature[i].bytes_list.value[0],
-                tf.uint8),tf.float32).eval(session=sess))
             
             labels_to_keep = []
             for label in example_label:
@@ -118,7 +114,8 @@ for tfrecord in tqdm(os.listdir(clean_outdir)):
                   
             )  
             cleaned_examples.append(example)
-        
+    # Remove the old file
+    os.remove(os.path.join(clean_outdir, tfrecord))    
     # Save it
     with tf.python_io.TFRecordWriter(os.path.join(clean_outdir, tfrecord)) as writer:
         for examp in cleaned_examples:
