@@ -5,37 +5,44 @@ Authors: Peggy Anderson & Kyle Seidenthal
 
 Date: 12-02-2019
 
-Last Modified: Tue 12 Feb 2019 07:13:35 PM CST
+Last Modified: Wed 13 Feb 2019 09:48:17 PM CST
 
 Description: A script to sort the audio embedding feature data into ones we want and ones we dont
 
 """
+import numpy as np
 import pandas as pd
 import argparse
 import os
+import tensorflow as tf
 from tqdm import tqdm
+from shutil import copyfile
 
 PATH_TO_DATA_FOLDER = "../../data"
+LABELS_TO_KEEP = os.path.join(PATH_TO_DATA_FOLDER,"clean_data" , "class_labels_indicies_cleaned.csv")
 
 # Parse command line args to get file name
 parser = argparse.ArgumentParser(description="Clean a given set of segments.")
 
+MAIN_DATA_DIR = "../../data/"
+
 parser.add_argument('data_dir', help="The path to the directory containing the data set.")
 parser.add_argument('clean_csv', help="The path to the csv to use to get the labels from.")
+parser.add_argument('outname', help="The name of the folder to store the cleaned data in")
 args = parser.parse_args()
 
 segment = pd.read_csv(args.clean_csv)
 
-clean_outdir = os.path.join(args.data_dir, "clean")
-dirty_outdir = os.path.join(args.data_dir, "dirty")
+original_folder = os.path.split(args.data_dir)[-1]
+
+clean_outdir = os.path.join(MAIN_DATA_DIR, "clean_data", original_folder, args.outname)
 
 if not os.path.exists(clean_outdir):
     os.makedirs(clean_outdir)
 
-if not os.path.exists(dirty_outdir):
-    os.makedirs(dirty_outdir)
+print("\nFlowing Tensors...")
 
-
+# Copy relevant files that match the beginnings of video codes for the labels we have selected to a clean location
 for filename in tqdm(os.listdir(args.data_dir)):
     if filename[-9:] != ".tfrecord":
         continue
@@ -45,15 +52,75 @@ for filename in tqdm(os.listdir(args.data_dir)):
     hits = segment[segment["# YTID"].str.startswith(YTID_shard)]
     
 
-    if hits.empty:
-        dirty_outfile = os.path.join(dirty_outdir, filename)
-        os.rename(os.path.join(args.data_dir, filename), dirty_outfile)
-
-    else:
+    if not hits.empty:
         clean_outfile = os.path.join(clean_outdir, filename)
-        os.rename(os.path.join(args.data_dir, filename), clean_outfile)
+        copyfile(os.path.join(args.data_dir, filename), clean_outfile)
 
+print("\nTensoring Flows...")
 
-# TODO: So, the files actually contain many sound samples, so we will have to load up the tensorflow data and remove
-# entries that we don't have labels for.  We might want to skip the above step in that case, but this may speed that
-# process up
+audio_embeddings_dict = {}
+audio_labels_dict = {}
+sess = tf.Session() 
+
+clean_labels = pd.read_csv(LABELS_TO_KEEP)
+
+# Run through the tensor records and remove any instances of labels that we do not want
+for tfrecord in tqdm(os.listdir(clean_outdir)):
+    data = {}
+    
+    cleaned_examples = []
+
+    for example in tf.python_io.tf_record_iterator(os.path.join(clean_outdir, tfrecord)):
+        tf_example = tf.train.Example.FromString(example)
+        vid_id = tf_example.features.feature['video_id'].bytes_list.value[0].decode(encoding='UTF-8')
+        start_time_seconds = tf_example.features.feature['start_time_seconds']
+        end_time_seconds = tf_example.features.feature['end_time_seconds']
+        
+        hits = segment[segment["# YTID"].str.contains(vid_id)]
+         
+        if not hits.empty:
+            example_label = list(np.asarray(tf_example.features.feature['labels'].int64_list.value))
+            tf_seq_example = tf.train.SequenceExample.FromString(example)
+            n_frames = len(tf_seq_example.feature_lists.feature_list['audio_embedding'].feature)
+    
+            audio_frame = []
+            
+            for i in range(n_frames):
+                audio_frame.append(tf.cast(tf.decode_raw(tf_seq_example.feature_lists.feature_list['audio_embedding'].feature[i].bytes_list.value[0],
+                tf.uint8),tf.float32).eval(session=sess))
+            
+            labels_to_keep = []
+            for label in example_label:
+                label_index_hits = clean_labels[clean_labels["index"] == label]
+
+                if not label_index_hits.empty:
+                    labels_to_keep.append(label)
+            
+           
+            example = tf.train.SequenceExample(
+                context=
+                    tf.train.Features(feature={
+                        'video_id': tf.train.Feature(
+                            bytes_list=tf.train.BytesList(
+                                value=[bytes(vid_id, encoding="utf-8")]
+                            )
+                        ),
+                        'start_time_seconds': start_time_seconds,
+                        'end_time_seconds': end_time_seconds,
+                        'labels': tf.train.Feature(
+                            int64_list=tf.train.Int64List(
+                                value=labels_to_keep
+                            ) 
+                        )
+                        }
+                    ),
+                  feature_lists=tf_seq_example.feature_lists                
+                  
+            )  
+            cleaned_examples.append(example)
+        
+    # Save it
+    with tf.python_io.TFRecordWriter(os.path.join(clean_outdir, tfrecord)) as writer:
+        for examp in cleaned_examples:
+            writer.write(examp.SerializeToString())
+

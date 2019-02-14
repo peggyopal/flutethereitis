@@ -5,7 +5,7 @@ Authors: Peggy Anderson & Kyle Seidenthal
 
 Date: 12-02-2019
 
-Last Modified: Tue 12 Feb 2019 07:13:37 PM CST
+Last Modified: Wed 13 Feb 2019 06:49:40 PM CST
 
 Description: A script to clean the datasets containing the labels
 
@@ -56,6 +56,6 @@ for string in tqdm(string_codes):
     clean_segments = clean_segments.append(hits)
 
 # Save it
-outname = PATH_TO_CLEAN_DATA_FOLDER + "/" + args.segment_csv.lstrip('../../data/') + "_cleaned.csv"
+outname = PATH_TO_CLEAN_DATA_FOLDER + "/" + args.segment_csv.lstrip('../../data/')[:-4] + "_cleaned.csv"
 
 clean_segments.to_csv(outname)
