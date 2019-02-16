@@ -5,7 +5,7 @@ Authors: Peggy Anderson & Kyle Seidenthal
 
 Date: 15-02-2019
 
-Last Modified: Sat 16 Feb 2019 12:14:56 AM CST
+Last Modified: Sat 16 Feb 2019 10:44:30 AM CST
 
 Description: A script to calculate various properties about the 128-dimensional feature vectors
 
@@ -63,7 +63,7 @@ def process_tensor_file(tfrecord):
                                
     return feature_vectors
 
-def process(data_dir, outname):
+def process(data_dir, outname, title):
     """
     Process the tensorflow records in data_dir and compute statistics about the features contained in them
     
@@ -119,7 +119,11 @@ def process(data_dir, outname):
                 
 
     plt.legend(loc="upper right")
-    plt.title("Avg. Flute vs Didgeridoo Feature Vector")
+    if title is None:
+        plt.title("Avg. Flute vs Didgeridoo Feature Vector")
+    else:
+        plt.title("Avg. " + title + " Flute vs Didgeridoo Feature Vector")
+    
     plt.xlabel("Feature Number")
     plt.ylabel("Value")
     plt.savefig(os.path.join(outname, 'avg_feature_vector.png'))
@@ -127,7 +131,11 @@ def process(data_dir, outname):
     
     # Andrews curves help visualize high dimensional features
     plt.figure()
-    plt.title("Andrews Curves for the Classes") 
+    if title is None:
+        plt.title("Andews Curves")
+    else:
+        plt.title("Andrews Curves for " + title) 
+
     andrews_curves(master_dataframe, 'class', colormap='viridis')
     plt.savefig(os.path.join(outname, 'andrews_curves.png'))
     #plt.show()
@@ -161,7 +169,12 @@ if __name__ == "__main__":
     
     parser.add_argument('data_dir', help="The path to the directory containing the data set.")
     parser.add_argument('outname', help="The path of the folder to store the cleaned data in")
+    parser.add_argument('-data_title', help="The name to use in figure titles")
     args = parser.parse_args()
 
-    process(args.data_dir, args.outname) 
+    title = None
+    if args.data_title is not None:
+        title = args.data_title
+
+    process(args.data_dir, args.outname, title) 
 
