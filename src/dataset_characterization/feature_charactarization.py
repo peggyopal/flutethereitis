@@ -5,7 +5,7 @@ Authors: Peggy Anderson & Kyle Seidenthal
 
 Date: 15-02-2019
 
-Last Modified: Sat 16 Feb 2019 10:44:30 AM CST
+Last Modified: Sat 16 Feb 2019 02:51:31 PM CST
 
 Description: A script to calculate various properties about the 128-dimensional feature vectors
 
@@ -113,10 +113,18 @@ def process(data_dir, outname, title):
     bins = np.arange(128)
    
     plt.figure()
+    
+
     for key in avgs.keys():
+        
+        if index_to_english(key) == "Flute":
+            color_name = 'r'
+        else:
+            color_name = 'b'
+
         avg = avgs[key]
-        plt.bar(bins, avg, alpha=0.5, label=index_to_english(key))
-                
+        plt.bar(bins, avg, alpha=0.5, label=index_to_english(key), color=color_name)
+        
 
     plt.legend(loc="upper right")
     if title is None:
@@ -136,7 +144,20 @@ def process(data_dir, outname, title):
     else:
         plt.title("Andrews Curves for " + title) 
 
-    andrews_curves(master_dataframe, 'class', colormap='viridis')
+    ax = andrews_curves(master_dataframe, 'class', colormap='viridis')
+
+    # Correct the colours so they are always the same
+    colors = {l.get_label():l.get_color() for l in ax.lines}
+    
+    for line, klass in zip(ax.lines, master_dataframe["class"]):
+        if klass == "Flute":
+            line.set_color('r')
+        else:
+            line.set_color('b')
+    leg = ax.get_legend()
+    hl_dict = {handle.get_label(): handle for handle in leg.legendHandles}
+    hl_dict['Flute'].set_color('red')
+    hl_dict['Didgeridoo'].set_color('blue')
     plt.savefig(os.path.join(outname, 'andrews_curves.png'))
     #plt.show()
     
