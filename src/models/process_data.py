@@ -14,11 +14,16 @@ Description: A file to process the data to prepare it for evaluation with the
 
 import pandas as pd
 import matplotlib.pyplot as plt
-import tqdm         # progress bar
+import multiprocessing as mp
 
 import os
 import tensorflow as tf
+import tqdm         # progress bar
 import unittest
+
+
+# Pooling stuff
+NUM_WORKERS = mp.cpu_count()
 
 # TensorFlow Data Stuff
 PATH_TO_DATA_FOLDER = os.path.abspath("data/")
@@ -84,8 +89,7 @@ def _process_tensor_file(tf_file_path):
                             "audio_embeddings": audio_embedding_list
                          }
 
-    return data
-
+    return list(data)
 
 def _process_data(dir_path):
     """
@@ -102,14 +106,16 @@ def _process_data(dir_path):
     # Get the features from the data
     data = {}
     all_tf_files = os.listdir(dir_path)
-    with tqdm.tqdm(total=len(all_tf_files), unit="files") as pbar:
-        for tf_file in all_tf_files:
-            tf_file_path = os.path.join(dir_path, tf_file)
-            data.update(_process_tensor_file(tf_file_path))
-            pbar.set_postfix(file=tf_file, refresh=False)
-            pbar.update(1)
+    pool = mp.Pool(NUM_WORKERS)
+    # with tqdm.tqdm(total=len(all_tf_files), unit="files") as pbar:
+        # for tf_file in all_tf_files:
+        #     tf_file_path = os.path.join(dir_path, tf_file)
+        #     data.update(_process_tensor_file(tf_file_path))
+    result = tqdm.tqdm(pool.imap(_process_tensor_file, [os.path.join(dir_path, x) for x in all_tf_files]), total=len(all_tf_files), unit="files")
+        # pbar.set_postfix(file=tf_file, refresh=False)
+        # pbar.update(1)
 
-    return data
+    return result
 
 
 def get_bal_train():
