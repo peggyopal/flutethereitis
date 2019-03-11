@@ -17,16 +17,17 @@ import matplotlib.pyplot as plt
 
 import os
 import tqdm         # progress bar
+import unittest
 
 # TensorFlow Data Stuff
-PATH_TO_DATA_FOLDER = "../../data"
-PATH_TO_CLEAN_DATA_FOLDER = "../../data/clean_data/flute_didgeridoo"
+PATH_TO_DATA_FOLDER = os.path.abspath("data/")
+PATH_TO_CLEAN_DATA_FOLDER = "/../../data/clean_data/flute_didgeridoo"
 PATH_TO_UNBAL_TRAIN_FOLDER = PATH_TO_CLEAN_DATA_FOLDER + "/unbal_train/flute_didgeridoo"
 PATH_TO_BAL_TRAIN_FOLDER = PATH_TO_CLEAN_DATA_FOLDER + "/bal_train/flute_didgeridoo"
 PATH_TO_EVAL_FOLDER = PATH_TO_CLEAN_DATA_FOLDER + "/eval/flute_didgeridoo"
 
 # Labels Stuff
-LABELS_CSV = os.path.join(PATH_TO_DATA_FOLDER, "class_labels_indicies.csv")
+LABELS_CSV = os.path.join(PATH_TO_DATA_FOLDER, "class_labels_indices.csv")
 
 
 def _lookup_label_by_index(label_int):
@@ -77,8 +78,8 @@ def _process_tensor_file(tf_file_path):
         audio_embedding_list = _extract_audio_embedding(audio_embedding_features)
 
         data[video_id] = {
-                             "labels": labels,
-                             "audio_embeddings": audio_embedding_list
+                            "labels": labels,
+                            "audio_embeddings": audio_embedding_list
                          }
 
     return data
@@ -120,7 +121,3 @@ def get_eval():
     """
     """
     return
-
-
-if __name__ == "__main__":
-    print(_lookup_label(169))
