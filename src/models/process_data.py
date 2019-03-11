@@ -16,12 +16,13 @@ import pandas as pd
 import matplotlib.pyplot as plt
 
 import os
+import tensorflow as tf
 import tqdm         # progress bar
 import unittest
 
 # TensorFlow Data Stuff
 PATH_TO_DATA_FOLDER = os.path.abspath("data/")
-PATH_TO_CLEAN_DATA_FOLDER = "/../../data/clean_data/flute_didgeridoo"
+PATH_TO_CLEAN_DATA_FOLDER = os.path.abspath("data/clean_data")
 PATH_TO_UNBAL_TRAIN_FOLDER = PATH_TO_CLEAN_DATA_FOLDER + "/unbal_train/flute_didgeridoo"
 PATH_TO_BAL_TRAIN_FOLDER = PATH_TO_CLEAN_DATA_FOLDER + "/bal_train/flute_didgeridoo"
 PATH_TO_EVAL_FOLDER = PATH_TO_CLEAN_DATA_FOLDER + "/eval/flute_didgeridoo"
@@ -41,7 +42,8 @@ def _extract_sequence(tf_data):
     """
     """
     sequence = tf.train.SequenceExample()
-    return sequence.ParseFromString(tf_data)
+    sequence.ParseFromString(tf_data)
+    return sequence
 
 
 def _extract_audio_embedding(ae_features):
@@ -72,12 +74,12 @@ def _process_tensor_file(tf_file_path):
     for record in raw_data:
         sequence = _extract_sequence(record)
         video_id = sequence.context.feature["video_id"].bytes_list.value
-        labels = sequence.context.feature["video_id"].int64_list.value
+        labels = sequence.context.feature["labels"].int64_list.value
 
-        audio_embedding_features = sequence.feature_lists.feature_list['audio_embedding'].feature
+        audio_embedding_features = sequence.feature_lists.feature_list["audio_embedding"].feature
         audio_embedding_list = _extract_audio_embedding(audio_embedding_features)
 
-        data[video_id] = {
+        data[video_id[0]] = {
                             "labels": labels,
                             "audio_embeddings": audio_embedding_list
                          }
@@ -121,3 +123,11 @@ def get_eval():
     """
     """
     return
+
+
+if __name__ == "__main__":
+    data = os.path.join(PATH_TO_BAL_TRAIN_FOLDER, "_5.tfrecord")
+
+    dict = _process_tensor_file(data)
+    # print(dict)
+    # print(type(dict[b'_5w5TVK5B90']['audio_embeddings']))
