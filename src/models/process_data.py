@@ -14,10 +14,10 @@ Description: A file to process the data to prepare it for evaluation with the
 
 import pandas as pd
 import matplotlib.pyplot as plt
+import tqdm         # progress bar
 
 import os
 import tensorflow as tf
-import tqdm         # progress bar
 import unittest
 
 # TensorFlow Data Stuff
@@ -99,16 +99,15 @@ def _process_data(dir_path):
     if not os.path.exists(dir_path):
         os.makedirs(dir_path)
 
+    # Get the features from the data
     data = {}
-    # Get the features from the data in parallel
-    i = 0
-    for tf_file in os.listdir(dir_path):
-        tf_file_path = os.path.join(dir_path, tf_file)
-        data.update(_process_tensor_file(tf_file_path))
-        i+=1
-
-        if i == 3:
-            break
+    all_tf_files = os.listdir(dir_path)
+    with tqdm.tqdm(total=len(all_tf_files), unit="files") as pbar:
+        for tf_file in all_tf_files:
+            tf_file_path = os.path.join(dir_path, tf_file)
+            data.update(_process_tensor_file(tf_file_path))
+            pbar.set_postfix(file=tf_file, refresh=False)
+            pbar.update(1)
 
     return data
 
@@ -131,8 +130,8 @@ def get_eval():
     return _process_data(PATH_TO_EVAL_FOLDER)
 
 
-if __name__ == "__main__":
-    # TESTING STUFF
+# TESTING STUFF
+# if __name__ == "__main__":
     # data = os.path.join(PATH_TO_BAL_TRAIN_FOLDER, "_5.tfrecord")
     #
     # dict = _process_data(data)
