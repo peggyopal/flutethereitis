@@ -14,7 +14,9 @@ Description: A file to process the data to prepare it for evaluation with the
 
 import pandas as pd
 import matplotlib.pyplot as plt
+
 import os
+import tqdm         # progress bar
 
 # TensorFlow Data Stuff
 PATH_TO_DATA_FOLDER = "../../data"
@@ -27,17 +29,79 @@ PATH_TO_EVAL_FOLDER = PATH_TO_CLEAN_DATA_FOLDER + "/eval/flute_didgeridoo"
 LABELS_CSV = os.path.join(PATH_TO_DATA_FOLDER, "class_labels_indicies.csv")
 
 
-def _lookup_label(label_int):
+def _lookup_label_by_index(label_int):
     """
     """
     labels = pd.read_csv(LABELS_CSV)
     return labels["display_name"].loc[labels["index"] == label_int].item()
 
 
-def _prepare_data():
+def _extract_sequence(tf_data):
     """
     """
-    return
+    sequence = tf.train.SequenceExample()
+    return sequence.ParseFromString(tf_data)
+
+
+def _extract_audio_embedding(ae_features):
+    """
+    Extract Audio Embedding as a List
+    """
+    num_embeddings = len(ae_features)
+
+    audio_embeddings = []
+
+    sess = tf.InteractiveSession()      # Need to start this for .eval()
+    for second in range(0, num_embeddings):
+        raw_embedding = tf.decode_raw(ae_features[second].bytes_list.value[0],tf.uint8)
+        float_embedding = tf.cast(raw_embedding, tf.float32).eval()
+        audio_embeddings.append(float_embedding)
+    sess.close()
+
+    return audio_embeddings
+
+
+def _process_tensor_file(tf_file_path):
+    """
+    """
+    data = {}
+
+    raw_data = tf.python_io.tf_record_iterator(path=tf_file_path)
+
+    for record in raw_data:
+        sequence = _extract_sequence(record)
+        video_id = sequence.context.feature["video_id"].bytes_list.value
+        labels = sequence.context.feature["video_id"].int64_list.value
+
+        audio_embedding_features = sequence.feature_lists.feature_list['audio_embedding'].feature
+        audio_embedding_list = _extract_audio_embedding(audio_embedding_features)
+
+        data[video_id] = {
+                             "labels": labels,
+                             "audio_embeddings": audio_embedding_list
+                         }
+
+    return data
+
+
+def _process_data(dir_path):
+    """
+    Process the tensorflow records in data_dir and compute statistics about the features contained in them
+
+    :param data_dir: The path to the tensorflow records to process
+    :param outname: The path to the directory to save the computations in
+    :returns: None
+    """
+
+    if not os.path.exists(outname):
+        os.makedirs(outname)
+
+    data = {}
+    # Get the features from the data in parallel
+    for tf_file in os.listdir(dir_path):
+        tf_file_path = os.path.join(dir_path, tf_file_path)
+        _process_tensor_file(tf_file_path)
+
 
 
 def get_bal_train():
