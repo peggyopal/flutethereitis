@@ -96,38 +96,48 @@ def _process_data(dir_path):
     :returns: None
     """
 
-    if not os.path.exists(outname):
-        os.makedirs(outname)
+    if not os.path.exists(dir_path):
+        os.makedirs(dir_path)
 
     data = {}
     # Get the features from the data in parallel
+    i = 0
     for tf_file in os.listdir(dir_path):
-        tf_file_path = os.path.join(dir_path, tf_file_path)
-        _process_tensor_file(tf_file_path)
+        tf_file_path = os.path.join(dir_path, tf_file)
+        data.update(_process_tensor_file(tf_file_path))
+        i+=1
 
+        if i == 3:
+            break
+
+    return data
 
 
 def get_bal_train():
     """
     """
-    return
+    return _process_data(PATH_TO_BAL_TRAIN_FOLDER)
 
 
 def get_unbal_train():
     """
     """
-    return
+    return _process_data(PATH_TO_UNBAL_TRAIN_FOLDER)
 
 
 def get_eval():
     """
     """
-    return
+    return _process_data(PATH_TO_EVAL_FOLDER)
 
 
 if __name__ == "__main__":
-    data = os.path.join(PATH_TO_BAL_TRAIN_FOLDER, "_5.tfrecord")
-
-    dict = _process_tensor_file(data)
+    # TESTING STUFF
+    # data = os.path.join(PATH_TO_BAL_TRAIN_FOLDER, "_5.tfrecord")
+    #
+    # dict = _process_data(data)
     # print(dict)
     # print(type(dict[b'_5w5TVK5B90']['audio_embeddings']))
+
+    # dict = get_bal_train()
+    # print(dict)
