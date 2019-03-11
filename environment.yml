@@ -1,0 +1,7 @@
+name: flutethereitis
+dependencies:
+ - numpy
+ - pandas
+ - tensorflow
+ - tqdm 
+ - matplotlib 
