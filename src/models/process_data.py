@@ -94,17 +94,12 @@ def _process_tensor_file(tf_file_path):
 
         audio_embedding_features = sequence.feature_lists.feature_list["audio_embedding"].feature
         audio_embedding_list = _extract_audio_embedding(audio_embedding_features)
-        # print(type(audio_embedding_list[0]))
+
         data[video_id[0]] = {
                             "labels": labels,
                             "audio_embeddings": audio_embedding_list
                         }
 
-        # print(data)
-        # break
-    #data_json = json.dumps(data, ensure_ascii=True)
-    # print(data_json)
-    # return data_json
     return data
 
 def _process_data(dir_path):
@@ -123,15 +118,7 @@ def _process_data(dir_path):
     data = {}
     all_tf_files = os.listdir(dir_path)
     pool = mp.Pool(NUM_WORKERS)
-    # with tqdm.tqdm(total=len(all_tf_files), unit="files") as pbar:
-        # for tf_file in all_tf_files:
-        #     tf_file_path = os.path.join(dir_path, tf_file)
-        #     data.update(_process_tensor_file(tf_file_path))
-        # pbar.set_postfix(file=tf_file, refresh=False)
-        # pbar.update(1)
     result = list(tqdm.tqdm(pool.imap(_process_tensor_file, [os.path.join(dir_path, x) for x in all_tf_files]), total=len(all_tf_files), unit="files"))
-        # for tf_file in all_tf_files:
-        #     tf_file_path = os.path.join(dir_path, tf_file)
 
     return result
 
