@@ -5,8 +5,6 @@ Authors: Peggy Anderson & Kyle Seidenthal
 
 Date: 11-03-2019
 
-Last Modified: Thu 14 Mar 2019 12:01 PM CST
-
 Description: A file to process the data to prepare it for evaluation with the
              models
 
