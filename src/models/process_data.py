@@ -16,6 +16,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import multiprocessing as mp
 
+import json
 import os
 import tensorflow as tf
 import tqdm         # progress bar
@@ -55,18 +56,26 @@ def _extract_audio_embedding(ae_features):
     """
     Extract Audio Embedding as a List
     """
-    num_embeddings = len(ae_features)
-
     audio_embeddings = []
 
     sess = tf.InteractiveSession()      # Need to start this for .eval()
-    for second in range(0, num_embeddings):
+    for second in range(0, len(ae_features)):
         raw_embedding = tf.decode_raw(ae_features[second].bytes_list.value[0],tf.uint8)
-        float_embedding = tf.cast(raw_embedding, tf.float32).eval()
+        float_embedding = tf.cast(raw_embedding, tf.float32).eval().tolist()
+        # print(type(float_embedding[1]))
         audio_embeddings.append(float_embedding)
     sess.close()
 
     return audio_embeddings
+
+
+def _extract_labels(protobuf):
+    """
+    """
+    labels = []
+    for i in range(0, len(protobuf)):
+        labels.append(protobuf[i])
+    return labels
 
 
 def _process_tensor_file(tf_file_path):
@@ -79,17 +88,24 @@ def _process_tensor_file(tf_file_path):
     for record in raw_data:
         sequence = _extract_sequence(record)
         video_id = sequence.context.feature["video_id"].bytes_list.value
-        labels = sequence.context.feature["labels"].int64_list.value
+
+        labels_protobuf = sequence.context.feature["labels"].int64_list.value
+        labels = _extract_labels(labels_protobuf)
 
         audio_embedding_features = sequence.feature_lists.feature_list["audio_embedding"].feature
         audio_embedding_list = _extract_audio_embedding(audio_embedding_features)
-
+        # print(type(audio_embedding_list[0]))
         data[video_id[0]] = {
                             "labels": labels,
                             "audio_embeddings": audio_embedding_list
-                         }
+                        }
 
-    return list(data)
+        # print(data)
+        # break
+    #data_json = json.dumps(data, ensure_ascii=True)
+    # print(data_json)
+    # return data_json
+    return data
 
 def _process_data(dir_path):
     """
@@ -111,9 +127,11 @@ def _process_data(dir_path):
         # for tf_file in all_tf_files:
         #     tf_file_path = os.path.join(dir_path, tf_file)
         #     data.update(_process_tensor_file(tf_file_path))
-    result = tqdm.tqdm(pool.imap(_process_tensor_file, [os.path.join(dir_path, x) for x in all_tf_files]), total=len(all_tf_files), unit="files")
         # pbar.set_postfix(file=tf_file, refresh=False)
         # pbar.update(1)
+    result = list(tqdm.tqdm(pool.imap(_process_tensor_file, [os.path.join(dir_path, x) for x in all_tf_files]), total=len(all_tf_files), unit="files"))
+        # for tf_file in all_tf_files:
+        #     tf_file_path = os.path.join(dir_path, tf_file)
 
     return result
 
