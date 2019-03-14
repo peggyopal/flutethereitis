@@ -44,8 +44,8 @@ def _lookup_label_by_index(label_int):
     :param label_int: A label as an integer value
     :returns: String representation of a label
     """
-    labels = pd.read_csv(LABELS_CSV)
-    return labels["display_name"].loc[labels["index"] == label_int].item()
+    label = pd.read_csv(LABELS_CSV)
+    return label["display_name"].loc[labels["index"] == label_int].item()
 
 
 def _extract_sequence(tf_data):
@@ -82,7 +82,7 @@ def _extract_audio_embedding(ae_features):
 def _convert_labels(protobuf):
     """
     Convert labels from google.protobuf.pyext._message.RepeatedScalarContainer
-    to a list of integers
+    to a list of the labels as the string values representation
 
     :param protobuf: google.protobuf.pyext._message.RepeatedScalarContainer of
                      labels extracted from TensorFlow SequenceExample
@@ -90,7 +90,8 @@ def _convert_labels(protobuf):
     """
     labels = []
     for i in range(0, len(protobuf)):
-        labels.append(protobuf[i])
+        label_as_string = _lookup_label_by_index(protobuf[i])
+        labels.append(label_as_string)
     return labels
 
 
@@ -118,8 +119,8 @@ def _process_tensor_file(tf_file_path):
         audio_embedding_list = _extract_audio_embedding(audio_embedding_features)
 
         data[video_id[0]] = {
-                            "labels": labels,
-                            "audio_embeddings": audio_embedding_list
+                            "labels": labels#,
+                            # "audio_embeddings": audio_embedding_list
                         }
 
     return data
