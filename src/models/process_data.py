@@ -3,9 +3,9 @@ File Name: process_data.py
 
 Authors: Peggy Anderson & Kyle Seidenthal
 
-Date: 27-02-2019
+Date: 11-03-2019
 
-Last Modified: Wed 27 Feb 2019 06:22:03 PM CST
+Last Modified: Thu 14 Mar 2019 12:01 PM CST
 
 Description: A file to process the data to prepare it for evaluation with the
              models
@@ -39,6 +39,10 @@ LABELS_CSV = os.path.join(PATH_TO_DATA_FOLDER, "class_labels_indices.csv")
 
 def _lookup_label_by_index(label_int):
     """
+    Given a integer value for a label lookup the string value
+
+    :param label_int: A label as an integer value
+    :returns: String representation of a label
     """
     labels = pd.read_csv(LABELS_CSV)
     return labels["display_name"].loc[labels["index"] == label_int].item()
@@ -46,6 +50,10 @@ def _lookup_label_by_index(label_int):
 
 def _extract_sequence(tf_data):
     """
+    Extract the SequenceExample as a string from a given TensorFlow record
+
+    :param data_dir: A TensorFlow record
+    :returns: String value of SequenceExample of TensorFlow record
     """
     sequence = tf.train.SequenceExample()
     sequence.ParseFromString(tf_data)
@@ -55,6 +63,9 @@ def _extract_sequence(tf_data):
 def _extract_audio_embedding(ae_features):
     """
     Extract Audio Embedding as a List
+
+    :param ae_features: A TensorFlow feature list
+    :returns: A list of the audio embeddings as float values
     """
     audio_embeddings = []
 
@@ -62,15 +73,20 @@ def _extract_audio_embedding(ae_features):
     for second in range(0, len(ae_features)):
         raw_embedding = tf.decode_raw(ae_features[second].bytes_list.value[0],tf.uint8)
         float_embedding = tf.cast(raw_embedding, tf.float32).eval().tolist()
-        # print(type(float_embedding[1]))
         audio_embeddings.append(float_embedding)
     sess.close()
 
     return audio_embeddings
 
 
-def _extract_labels(protobuf):
+def _convert_labels(protobuf):
     """
+    Convert labels from google.protobuf.pyext._message.RepeatedScalarContainer
+    to a list of integers
+
+    :param protobuf: google.protobuf.pyext._message.RepeatedScalarContainer of
+                     labels extracted from TensorFlow SequenceExample
+    :returns: a list of integer values for labels
     """
     labels = []
     for i in range(0, len(protobuf)):
@@ -80,6 +96,12 @@ def _extract_labels(protobuf):
 
 def _process_tensor_file(tf_file_path):
     """
+    Process the tensorflow records tf_file_path to represent in a dictionary to
+    enable easy process of data
+
+    :param tf_file_path: The path to the tensorflow records to process
+    :returns: A dictionary keyed by video_ids where the values are the labels
+              and audio embeddings of the video_id
     """
     data = {}
 
@@ -90,7 +112,7 @@ def _process_tensor_file(tf_file_path):
         video_id = sequence.context.feature["video_id"].bytes_list.value
 
         labels_protobuf = sequence.context.feature["labels"].int64_list.value
-        labels = _extract_labels(labels_protobuf)
+        labels = _convert_labels(labels_protobuf)
 
         audio_embedding_features = sequence.feature_lists.feature_list["audio_embedding"].feature
         audio_embedding_list = _extract_audio_embedding(audio_embedding_features)
@@ -107,14 +129,12 @@ def _process_data(dir_path):
     Process the tensorflow records in data_dir and compute statistics about the features contained in them
 
     :param data_dir: The path to the tensorflow records to process
-    :param outname: The path to the directory to save the computations in
-    :returns: None
+    :returns:
     """
 
     if not os.path.exists(dir_path):
         os.makedirs(dir_path)
 
-    # Get the features from the data
     data = {}
     all_tf_files = os.listdir(dir_path)
     pool = mp.Pool(NUM_WORKERS)
@@ -125,18 +145,27 @@ def _process_data(dir_path):
 
 def get_bal_train():
     """
+    Process the balanced training set TensorFlow records to use in a ML model
+
+    :returns: A dictionary representation of the data set
     """
     return _process_data(PATH_TO_BAL_TRAIN_FOLDER)
 
 
 def get_unbal_train():
     """
+    Process the unbalanced training set TensorFlow records to use in a ML model
+
+    :returns: A dictionary representation of the data set
     """
     return _process_data(PATH_TO_UNBAL_TRAIN_FOLDER)
 
 
 def get_eval():
     """
+    Process the evaluation set TensorFlow records to use in a ML model
+
+    :returns: A dictionary representation of the data set
     """
     return _process_data(PATH_TO_EVAL_FOLDER)
 
