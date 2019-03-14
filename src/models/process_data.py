@@ -42,10 +42,15 @@ def _lookup_label_by_index(label_int):
     Given a integer value for a label lookup the string value
 
     :param label_int: A label as an integer value
-    :returns: String representation of a label
+    :returns: String representation of a label if found, if index is not valid
+              the program will continue as normal, but a value in the list is
+              yelling at you
     """
     label = pd.read_csv(LABELS_CSV)
-    return label["display_name"].loc[labels["index"] == label_int].item()
+    try:
+        return label["display_name"].loc[label["index"] == label_int].item()
+    except:
+        return "CAN'T FIND LABEL INDEX"
 
 
 def _extract_sequence(tf_data):
@@ -171,13 +176,15 @@ def get_eval():
     return _process_data(PATH_TO_EVAL_FOLDER)
 
 
-# TESTING STUFF
+# # TESTING STUFF
 # if __name__ == "__main__":
-    # data = os.path.join(PATH_TO_BAL_TRAIN_FOLDER, "_5.tfrecord")
-    #
-    # dict = _process_data(data)
-    # print(dict)
-    # print(type(dict[b'_5w5TVK5B90']['audio_embeddings']))
-
-    # dict = get_bal_train()
-    # print(dict)
+#     label = _lookup_label_by_index(100000)
+#     print(label)
+#     data = os.path.join(PATH_TO_BAL_TRAIN_FOLDER, "_5.tfrecord")
+#
+#     dict = _process_data(data)
+#     print(dict)
+#     print(type(dict[b'_5w5TVK5B90']['audio_embeddings']))
+#
+#     dict = get_bal_train()
+#     print(dict)
