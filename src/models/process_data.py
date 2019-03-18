@@ -10,15 +10,21 @@ Description: A file to process the data to prepare it for evaluation with the
 
 """
 
+
 import pandas as pd
 import matplotlib.pyplot as plt
 import multiprocessing as mp
+import tensorflow as tf
 
 import json
 import os
-import tensorflow as tf
+import sys
 import tqdm         # progress bar
 import unittest
+
+module_path = os.path.dirname(os.path.abspath("src/helpers.py"))
+sys.path.insert(0, module_path + '/../../')
+from src.helpers import lookup_label_by_index, extract_sequence, convert_feature_key_to_string
 
 
 # Pooling stuff
@@ -29,38 +35,10 @@ PATH_TO_DATA_FOLDER = os.path.abspath("data/")
 PATH_TO_CLEAN_DATA_FOLDER = os.path.abspath("data/clean_data")
 PATH_TO_UNBAL_TRAIN_FOLDER = PATH_TO_CLEAN_DATA_FOLDER + "/unbal_train/flute_didgeridoo"
 PATH_TO_BAL_TRAIN_FOLDER = PATH_TO_CLEAN_DATA_FOLDER + "/bal_train/flute_didgeridoo"
+# PATH_TO_EVAL_FOLDER = PATH_TO_DATA_FOLDER + "/eval"
 PATH_TO_EVAL_FOLDER = PATH_TO_CLEAN_DATA_FOLDER + "/eval/flute_didgeridoo"
 
-# Labels Stuff
-LABELS_CSV = os.path.join(PATH_TO_DATA_FOLDER, "class_labels_indices.csv")
 
-
-def _lookup_label_by_index(label_int):
-    """
-    Given a integer value for a label lookup the string value
-
-    :param label_int: A label as an integer value
-    :returns: String representation of a label if found, if index is not valid
-              the program will continue as normal, but a value in the list is
-              yelling at you
-    """
-    label = pd.read_csv(LABELS_CSV)
-    try:
-        return label["display_name"].loc[label["index"] == label_int].item()
-    except:
-        return "CAN'T FIND LABEL INDEX"
-
-
-def _extract_sequence(tf_data):
-    """
-    Extract the SequenceExample as a string from a given TensorFlow record
-
-    :param data_dir: A TensorFlow record
-    :returns: String value of SequenceExample of TensorFlow record
-    """
-    sequence = tf.train.SequenceExample()
-    sequence.ParseFromString(tf_data)
-    return sequence
 
 
 def _extract_audio_embedding(ae_features):
@@ -93,7 +71,7 @@ def _convert_labels(protobuf):
     """
     labels = []
     for i in range(0, len(protobuf)):
-        label_as_string = _lookup_label_by_index(protobuf[i])
+        label_as_string = lookup_label_by_index(protobuf[i])
         labels.append(label_as_string)
     return labels
 
@@ -112,11 +90,11 @@ def _process_tensor_file(tf_file_path):
     raw_data = tf.python_io.tf_record_iterator(path=tf_file_path)
 
     for record in raw_data:
-        sequence = _extract_sequence(record)
+        sequence = extract_sequence(record)
         video_id = sequence.context.feature["video_id"].bytes_list.value
 
         labels_protobuf = sequence.context.feature["labels"].int64_list.value
-        labels = _convert_labels(labels_protobuf)
+        labels = convert_feature_key_to_string(labels_protobuf)
 
         audio_embedding_features = sequence.feature_lists.feature_list["audio_embedding"].feature
         audio_embedding_list = _extract_audio_embedding(audio_embedding_features)
@@ -140,9 +118,12 @@ def _process_data(dir_path):
         os.makedirs(dir_path)
 
     data = {}
+    print(dir_path)
     all_tf_files = os.listdir(dir_path)
+    all_tf_files = [os.path.join(dir_path, x) for x in all_tf_files if not x.startswith(".")]
     pool = mp.Pool(NUM_WORKERS)
-    result = list(tqdm.tqdm(pool.imap(_process_tensor_file, [os.path.join(dir_path, x) for x in all_tf_files]), total=len(all_tf_files), unit="files"))
+    # print(len([os.path.join(dir_path, x) for x in all_tf_files]))
+    result = list(tqdm.tqdm(pool.imap(_process_tensor_file, all_tf_files), total=len(all_tf_files), unit="files"))
 
     return result
 
