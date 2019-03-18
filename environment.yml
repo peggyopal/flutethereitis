@@ -1,8 +1,12 @@
 name: flutethereitis
+channels:
+ - defaults
+ - omnia
 dependencies:
  - numpy
  - pandas
  - tensorflow
  - tqdm 
  - matplotlib
- - pytest 
+ - pytest
+ - hmmlearn 
