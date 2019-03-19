@@ -1,7 +1,7 @@
 """
 File Name: clean_embeddings.py
 
-Authors: Peggy Anderson & Kyle Seidenthal 
+Authors: Peggy Anderson & Kyle Seidenthal
 
 Date: 12-02-2019
 
@@ -15,122 +15,204 @@ import pandas as pd
 import argparse
 import os
 import tensorflow as tf
-from tqdm import tqdm
+import tqdm
+import sys
 from shutil import copyfile
 import multiprocessing as mp
 
-PATH_TO_DATA_FOLDER = "../../data"
-LABELS_TO_KEEP = os.path.join(PATH_TO_DATA_FOLDER,"clean_data" , "class_labels_indicies_cleaned.csv")
+module_path = os.path.dirname(os.path.abspath("src/helpers.py"))
+sys.path.insert(0, module_path + '/../')
+import src.helpers as help
 
-# Parse command line args to get file name
-parser = argparse.ArgumentParser(description="Clean a given set of segments.")
 
-MAIN_DATA_DIR = "../../data/"
+# Suppress TQDM warnings
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
+
+
+# Data stuff
+PATH_TO_DATA_FOLDER = os.path.abspath("data/")
+PATH_TO_CLEAN_DATA_FOLDER = os.path.abspath("data/clean_data")
+
+# Original data stuff
+PATH_TO_UNBAL_TRAIN_FOLDER = PATH_TO_DATA_FOLDER + "/unbal_train"
+PATH_TO_BAL_TRAIN_FOLDER = PATH_TO_DATA_FOLDER + "/bal_train"
+PATH_TO_EVAL_FOLDER = PATH_TO_DATA_FOLDER + "/eval"
+
+# Cleaned data stuff
+PATH_TO_CLEAN_BAL_CSV = PATH_TO_CLEAN_DATA_FOLDER + "/balanced_train_segments_cleaned.csv"
+PATH_TO_CLEAN_UNBAL_CSV = PATH_TO_CLEAN_DATA_FOLDER + "/unbalanced_train_segments_cleaned.csv"
+PATH_TO_CLEAN_EVAL_CSV = PATH_TO_CLEAN_DATA_FOLDER + "/eval_segments_cleaned.csv"
+PATH_TO_CLEAN_UNBAL_TRAIN_FOLDER = PATH_TO_CLEAN_DATA_FOLDER + "/unbal_train/flute_didgeridoo"
+PATH_TO_CLEAN_BAL_TRAIN_FOLDER = PATH_TO_CLEAN_DATA_FOLDER + "/bal_train/flute_didgeridoo"
+PATH_TO_CLEAN_EVAL_FOLDER = PATH_TO_CLEAN_DATA_FOLDER + "/eval/flute_didgeridoo"
+CLEAN_LABELS_CSV = os.path.join(PATH_TO_DATA_FOLDER, "class_labels_indices.csv")
+CLEANED_CSV = pd.DataFrame()
+
+
 NUM_WORKERS = mp.cpu_count()
 
-parser.add_argument('data_dir', help="The path to the directory containing the data set.")
-parser.add_argument('clean_csv', help="The path to the csv to use to get the labels from.")
-parser.add_argument('outname', help="The name of the folder to store the cleaned data in")
-args = parser.parse_args()
 
-segment = pd.read_csv(args.clean_csv)
+def _set_cleaned_csv(cleaned_csv_path):
+    global CLEANED_CSV
+    try:
+        CLEANED_CSV = pd.read_csv(cleaned_csv_path)
+    except Exception as e:
+        raise
 
-original_folder = os.path.split(args.data_dir)[-1]
 
-clean_outdir = os.path.join(MAIN_DATA_DIR, "clean_data", original_folder, args.outname)
+def _extract_cleaned_records(cleaned_labels, sequence):
+    cleaned_records = []
 
-if not os.path.exists(clean_outdir):
-    os.makedirs(clean_outdir)
+    sess = tf.InteractiveSession()
+    video_id = sequence.context.feature['video_id'].bytes_list.value[0].decode(encoding='UTF-8')
+    sess.close()
 
-print("\nFlowing Tensors...")
+    start_time_seconds = sequence.context.feature['start_time_seconds']
+    end_time_seconds = sequence.context.feature['end_time_seconds']
 
-# Copy relevant files that match the beginnings of video codes for the labels we have selected to a clean location
-for filename in tqdm(os.listdir(args.data_dir)):
-    if filename[-9:] != ".tfrecord":
-        continue
+    audio_embedding_features = sequence.feature_lists.feature_list["audio_embedding"].feature
+    audio_embedding_list = help.extract_audio_embedding(audio_embedding_features)
 
-    YTID_shard = filename[:2]
-    
-    hits = segment[segment["# YTID"].str.startswith(YTID_shard)]
-    
+    hits = CLEANED_CSV[CLEANED_CSV["# YTID"].str.contains(video_id)]
 
     if not hits.empty:
-        clean_outfile = os.path.join(clean_outdir, filename)
-        copyfile(os.path.join(args.data_dir, filename), clean_outfile)
+        example_label = list(np.asarray(sequence.context.feature['labels'].int64_list.value))
 
-print("\nTensoring Flows...")
+        labels_to_keep = []
+        for label in example_label:
+            label_index_hits = cleaned_labels[cleaned_labels["index"] == label]
 
-audio_embeddings_dict = {}
-audio_labels_dict = {}
-sess = tf.Session() 
+            if not label_index_hits.empty:
+                labels_to_keep.append(label)
 
-clean_labels = pd.read_csv(LABELS_TO_KEEP)
+        updated_record = tf.train.SequenceExample(
+            context=
+                tf.train.Features(feature={
+                    'video_id': tf.train.Feature(
+                        bytes_list=tf.train.BytesList(
+                            value=[bytes(video_id, encoding="utf-8")]
+                        )
+                    ),
+                    'start_time_seconds': start_time_seconds,
+                    'end_time_seconds': end_time_seconds,
+                    'labels': tf.train.Feature(
+                        int64_list=tf.train.Int64List(
+                            value=labels_to_keep
+                        )
+                    )
+                    }
+                ),
+              feature_lists=sequence.feature_lists
+
+        )
+        cleaned_records.append(updated_record)
+
+    return cleaned_records
 
 
-def process_tfrecords(tfrecord):
+def _overwrite_tfrecord(cleaned_dir_path, tfrecord, cleaned_examples):
+    # Remove the old file
+    os.remove(cleaned_dir_path)
+    # Save it
+    with tf.python_io.TFRecordWriter(cleaned_dir_path) as writer:
+        for examp in cleaned_examples:
+            writer.write(examp.SerializeToString())
+    return
+
+
+def _process_tfrecords(tf_file_path):
     """
     Process the given tensorflow record file to remove unecessary labels
-    
+
     :param file: The file to process
     :returns: None, but the file will be updated to only include relevant labels
     """
-    cleaned_examples = []
-    
-    # Get each example in the record and check its labels
-    for example in tf.python_io.tf_record_iterator(os.path.join(clean_outdir, tfrecord)):
-        tf_example = tf.train.Example.FromString(example)
-        vid_id = tf_example.features.feature['video_id'].bytes_list.value[0].decode(encoding='UTF-8')
-        start_time_seconds = tf_example.features.feature['start_time_seconds']
-        end_time_seconds = tf_example.features.feature['end_time_seconds']
-        
-        hits = segment[segment["# YTID"].str.contains(vid_id)]
-        
-        
+    cleaned_labels = pd.read_csv(CLEAN_LABELS_CSV)
+    raw_data = tf.python_io.tf_record_iterator(path=tf_file_path)
+
+    for record in raw_data:
+        sequence = help.extract_sequence(record)
+        updated_record = _extract_cleaned_records(cleaned_labels, sequence)
+
+
+    _overwrite_tfrecord(tf_file_path, record, updated_record)
+    # # Remove the old file
+    # os.remove(os.path.join(cleaned_dir_path, tfrecord))
+    # # Save it
+    # with tf.python_io.TFRecordWriter(os.path.join(cleaned_dir_path, tfrecord)) as writer:
+    #     for examp in cleaned_examples:
+    #         writer.write(examp.SerializeToString())
+
+
+def _make_clean_dir(path):
+    if not os.path.exists(path):
+        os.makedirs(path)
+
+
+def _copy_all_desired_tfrecords(data_dir_path, cleaned_csv, cleaned_dir_path):
+    for filename in tqdm.tqdm(os.listdir(data_dir_path), unit="files"):
+        if filename[-9:] != ".tfrecord" and filename.startswith("."):
+            continue
+
+        YouTubeID_shard = filename[:2]
+
+        hits = cleaned_csv[cleaned_csv["# YTID"].str.startswith(YouTubeID_shard)]
+
         if not hits.empty:
-            example_label = list(np.asarray(tf_example.features.feature['labels'].int64_list.value))
-            tf_seq_example = tf.train.SequenceExample.FromString(example)
-    
-            
-            labels_to_keep = []
-            for label in example_label:
-                label_index_hits = clean_labels[clean_labels["index"] == label]
-
-                if not label_index_hits.empty:
-                    labels_to_keep.append(label)
-            
-           
-            example = tf.train.SequenceExample(
-                context=
-                    tf.train.Features(feature={
-                        'video_id': tf.train.Feature(
-                            bytes_list=tf.train.BytesList(
-                                value=[bytes(vid_id, encoding="utf-8")]
-                            )
-                        ),
-                        'start_time_seconds': start_time_seconds,
-                        'end_time_seconds': end_time_seconds,
-                        'labels': tf.train.Feature(
-                            int64_list=tf.train.Int64List(
-                                value=labels_to_keep
-                            ) 
-                        )
-                        }
-                    ),
-                  feature_lists=tf_seq_example.feature_lists                
-                  
-            )  
-            cleaned_examples.append(example)
-    
-    # Remove the old file
-    os.remove(os.path.join(clean_outdir, tfrecord))    
-    # Save it
-    with tf.python_io.TFRecordWriter(os.path.join(clean_outdir, tfrecord)) as writer:
-        for examp in cleaned_examples:
-            writer.write(examp.SerializeToString())
+            cleaned_file_path = os.path.join(cleaned_dir_path, filename)
+            copyfile(os.path.join(data_dir_path, filename), cleaned_file_path)
+            # print(os.path.join(data_dir_path, filename), cleaned_file_path)
 
 
-# Run through the tensor records and remove any instances of labels that we do not want
-pool = mp.Pool(NUM_WORKERS)
-result = list(tqdm(pool.imap(process_tfrecords, os.listdir(clean_outdir)), total=len(os.listdir(clean_outdir))))
-    
+def _segregate_tfrecords(data_dir_path, cleaned_csv_path, cleaned_dir_path):
+    _make_clean_dir(cleaned_dir_path)
 
+    print("\nFlowing Tensors...")
+    _set_cleaned_csv(cleaned_csv_path)
+    _copy_all_desired_tfrecords(data_dir_path, CLEANED_CSV, cleaned_dir_path)
+
+    print("\nTensoring Flows...")
+
+    audio_embeddings_dict = {}
+    audio_labels_dict = {}
+
+    clean_labels = pd.read_csv(CLEAN_LABELS_CSV)
+
+    cleaned_tfrd = os.listdir(cleaned_dir_path)
+    cleaned_tfrd_path = [os.path.join(cleaned_dir_path, x) for x in cleaned_tfrd if not x.startswith(".")]
+
+    pool = mp.Pool(NUM_WORKERS)
+    result = list(tqdm.tqdm(pool.imap(_process_tfrecords, cleaned_tfrd_path), total=len(cleaned_tfrd), unit="files"))
+
+    return
+
+
+
+def get_bal_train():
+    """
+    Process the balanced training set TensorFlow records to use in a ML model
+
+    :returns: A dictionary representation of the data set
+    """
+    return _segregate_tfrecords(PATH_TO_BAL_TRAIN_FOLDER, PATH_TO_CLEAN_BAL_CSV, PATH_TO_CLEAN_BAL_TRAIN_FOLDER)
+
+
+def get_unbal_train():
+    """
+    Process the unbalanced training set TensorFlow records to use in a ML model
+
+    :returns: A dictionary representation of the data set
+    """
+    return _segregate_tfrecords(PATH_TO_UNBAL_TRAIN_FOLDER, PATH_TO_CLEAN_UNBAL_CSV, PATH_TO_CLEAN_UNBAL_TRAIN_FOLDER)
+
+
+def get_eval():
+    """
+    Process the evaluation set TensorFlow records to use in a ML model
+
+    :returns: A dictionary representation of the data set
+    """
+    return _segregate_tfrecords(PATH_TO_EVAL_FOLDER, PATH_TO_CLEAN_EVAL_CSV, PATH_TO_CLEAN_EVAL_FOLDER)
+
+
+get_bal_train()
