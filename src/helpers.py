@@ -13,11 +13,24 @@ import tensorflow as tf
 import pandas as pd
 
 import os
+import tqdm
 
 
 # Labels Stuff
 PATH_TO_DATA_FOLDER = os.path.abspath("data/")
+PATH_TO_CLEAN_DATA_FOLDER = os.path.abspath("data/clean_data")
 LABELS_CSV = os.path.join(PATH_TO_DATA_FOLDER, "class_labels_indices.csv")
+CLEAN_LABELS_CSV = os.path.join(PATH_TO_CLEAN_DATA_FOLDER, "class_labels_indices_cleaned.csv")
+
+
+def extract_label_codes_from_cleaned_labels_csv():
+    clean_labels = pd.read_csv(CLEAN_LABELS_CSV)
+    label_string_codes = []
+
+    for index, row in tqdm.tqdm(clean_labels.iterrows(), total=clean_labels.shape[0]):
+        label_string_codes.append(row["mid"])
+
+    return label_string_codes
 
 
 def lookup_label_by_index(label_int):
