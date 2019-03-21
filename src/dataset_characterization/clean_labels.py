@@ -10,12 +10,19 @@ Last Modified: Thu 14 Feb 2019 08:53:30 AM CST
 Description: A script to remove labels that are not related to musical instruments
 
 """
-import pandas as pd
+
 import os
+
+import pandas as pd
 from tqdm import tqdm
 
-PATH_TO_DATA_FOLDER = "../../data"
-PATH_TO_CLEAN_DATA_FOLDER = "../../data/clean_data"
+module_path = os.path.dirname(os.path.abspath("src/helpers.py"))
+sys.path.insert(0, module_path + '/../')
+import src.helpers as help
+
+
+PATH_TO_DATA_FOLDER = os.path.abspath("data/")
+PATH_TO_CLEAN_DATA_FOLDER = os.path.abspath("data/clean_data")
 
 LABELS_CSV =  os.path.join(PATH_TO_DATA_FOLDER, "class_labels_indices.csv")
 
