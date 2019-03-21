@@ -10,14 +10,19 @@ Description: A script to 'clean' the data sets to be smaller and more precise
 
 """
 
-module_path = os.path.dirname(os.path.abspath("src/helpers.py"))
+import os
+import sys
+
+module_path = os.path.dirname(os.path.abspath("src/dataset_characterization"))
 sys.path.insert(0, module_path + '/../')
-import src.helpers as help
+import src.dataset_characterization.clean_embeddings as ce
+import src.dataset_characterization.clean_labels as label
+import src.dataset_characterization.clean_segment as cs
 
 
 print("=================================")
 print("Cleaning Labels")
-help.clean_all_labels()
+label.clean_all_labels()
 print("Done Cleaning the Labels - That was tense!")
 print("\n")
 
@@ -26,14 +31,13 @@ print("=================================")
 print("Cleaning Segments")
 
 print("Balanced Train")
-help.clean_bal_train_segments()
+cs.clean_bal_train_segments()
 
 print("Unbalanced Train")
-help.clean_unbal_train_segments()
+cs.clean_unbal_train_segments()
 
 print("Eval")
-help.clean_eval_segments()
-python clean_segment.py ../../data/eval_segments.csv
+cs.clean_eval_segments()
 print("Done Cleaning Segments - Almost There...")
 print()
 
@@ -41,13 +45,13 @@ print()
 print("=================================")
 print("Cleaning TensorRecords")
 print("Balanced Train")
-help.clean_bal_train_records()
+ce.clean_bal_train_records()
 
 print("Unbalanced Train")
-help.clean_unbal_train_records()
+ce.clean_unbal_train_records()
 
 print("Eval")
-help.clean_eval_records()
+ce.clean_eval_records()
 
 print("YAY! ALL DONE!.")
 print("=================================")
