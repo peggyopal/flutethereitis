@@ -188,7 +188,7 @@ def _segregate_tfrecords(data_dir_path, cleaned_csv_path, cleaned_dir_path):
 
 
 
-def get_bal_train():
+def clean_bal_train_records():
     """
     Process the balanced training set TensorFlow records to use in a ML model
 
@@ -197,7 +197,7 @@ def get_bal_train():
     return _segregate_tfrecords(PATH_TO_BAL_TRAIN_FOLDER, PATH_TO_CLEAN_BAL_CSV, PATH_TO_CLEAN_BAL_TRAIN_FOLDER)
 
 
-def get_unbal_train():
+def clean_unbal_train_records():
     """
     Process the unbalanced training set TensorFlow records to use in a ML model
 
@@ -206,13 +206,10 @@ def get_unbal_train():
     return _segregate_tfrecords(PATH_TO_UNBAL_TRAIN_FOLDER, PATH_TO_CLEAN_UNBAL_CSV, PATH_TO_CLEAN_UNBAL_TRAIN_FOLDER)
 
 
-def get_eval():
+def clean_eval_records():
     """
     Process the evaluation set TensorFlow records to use in a ML model
 
     :returns: A dictionary representation of the data set
     """
     return _segregate_tfrecords(PATH_TO_EVAL_FOLDER, PATH_TO_CLEAN_EVAL_CSV, PATH_TO_CLEAN_EVAL_FOLDER)
-
-
-get_bal_train()
