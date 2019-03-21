@@ -16,7 +16,6 @@ import os
 import pandas as pd
 from tqdm import tqdm
 
-
 PATH_TO_DATA_FOLDER = os.path.abspath("data/")
 PATH_TO_CLEAN_DATA_FOLDER = os.path.abspath("data/clean_data")
 
@@ -31,4 +30,17 @@ def clean_all_labels():
 # "French Horn", "Theremin", "Timpani", "Rattle", "Jingle Bell", "Zither", "Rimshot","Harpsichord", "Maraca", "Yodeling",
 # "Tubular Bells", "Gong", "Violin", "Fiddle"]
 
-aan_labels.to_csv(os.path.join(PATH_TO_CLEAN_DATA_FOLDER, "class_labels_indicies_cleaned.csv"))
+    labels_to_keep = ["flute", "didgeridoo"]
+
+    labels_df = pd.read_csv(LABELS_CSV)
+
+    clean_labels = pd.DataFrame()
+
+    for label in tqdm(labels_to_keep):
+        hits = labels_df[labels_df["display_name"].str.lower().str.contains(label.lower())]
+
+        clean_labels = clean_labels.append(hits)
+
+    clean_labels = clean_labels.drop_duplicates(subset="display_name")
+
+    clean_labels.to_csv(os.path.join(PATH_TO_CLEAN_DATA_FOLDER, "class_labels_indices_cleaned.csv"))
