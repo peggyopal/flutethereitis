@@ -10,15 +10,19 @@ Last Modified: Thu 14 Feb 2019 08:53:30 AM CST
 Description: A script to remove labels that are not related to musical instruments
 
 """
-import pandas as pd
+
 import os
+
+import pandas as pd
 from tqdm import tqdm
 
-PATH_TO_DATA_FOLDER = "../../data"
-PATH_TO_CLEAN_DATA_FOLDER = "../../data/clean_data"
+PATH_TO_DATA_FOLDER = os.path.abspath("data/")
+PATH_TO_CLEAN_DATA_FOLDER = os.path.abspath("data/clean_data")
 
 LABELS_CSV =  os.path.join(PATH_TO_DATA_FOLDER, "class_labels_indices.csv")
 
+
+def clean_all_labels():
 
 # labels_to_keep = ["Musical", "Instrument", "Plucked", "String",  "Drum", "Singing","Bass", "Acoustic", "Hi-Hat",
 # "Cymbal", "Bagpipes", "Digeridoo", "Cello", "Flute", "Glockenspiel", "Clarinet", "Organ", "Percussion", "Trombone",
@@ -26,17 +30,17 @@ LABELS_CSV =  os.path.join(PATH_TO_DATA_FOLDER, "class_labels_indices.csv")
 # "French Horn", "Theremin", "Timpani", "Rattle", "Jingle Bell", "Zither", "Rimshot","Harpsichord", "Maraca", "Yodeling",
 # "Tubular Bells", "Gong", "Violin", "Fiddle"]
 
-labels_to_keep = ["flute", "didgeridoo"]
+    labels_to_keep = ["flute", "didgeridoo"]
 
-labels_df = pd.read_csv(LABELS_CSV)
+    labels_df = pd.read_csv(LABELS_CSV)
 
-clean_labels = pd.DataFrame()
+    clean_labels = pd.DataFrame()
 
-for label in tqdm(labels_to_keep):
-    hits = labels_df[labels_df["display_name"].str.lower().str.contains(label.lower())]
+    for label in tqdm(labels_to_keep):
+        hits = labels_df[labels_df["display_name"].str.lower().str.contains(label.lower())]
 
-    clean_labels = clean_labels.append(hits)
+        clean_labels = clean_labels.append(hits)
 
-clean_labels = clean_labels.drop_duplicates(subset="display_name")
+    clean_labels = clean_labels.drop_duplicates(subset="display_name")
 
-clean_labels.to_csv(os.path.join(PATH_TO_CLEAN_DATA_FOLDER, "class_labels_indicies_cleaned.csv"))
+    clean_labels.to_csv(os.path.join(PATH_TO_CLEAN_DATA_FOLDER, "class_labels_indices_cleaned.csv"))

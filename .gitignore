@@ -2,3 +2,6 @@
 __pycache__/
 *.swp
 *._*
+data/bal_train/*.tfrecord
+data/unbal_train/*.tfrecord
+data/eval/*.tfrecord

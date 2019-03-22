@@ -98,7 +98,7 @@ def _create_cleaned_segments_csv(dataset_csv):
     _save_csv(desired_records_without_undesired_labels, dataset_csv)
 
 
-def get_bal_train():
+def clean_bal_train_segments():
     """
     Process the balanced training set TensorFlow records to use in a ML model
 
@@ -107,7 +107,7 @@ def get_bal_train():
     return _create_cleaned_segments_csv("balanced_train_segments.csv")
 
 
-def get_unbal_train():
+def clean_unbal_train_segments():
     """
     Process the unbalanced training set TensorFlow records to use in a ML model
 
@@ -116,7 +116,7 @@ def get_unbal_train():
     return _create_cleaned_segments_csv("balanced_train_segments.csv")
 
 
-def get_eval():
+def clean_eval_segments():
     """
     Process the evaluation set TensorFlow records to use in a ML model
 
