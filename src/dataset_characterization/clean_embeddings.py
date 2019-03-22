@@ -45,7 +45,7 @@ PATH_TO_CLEAN_EVAL_CSV = PATH_TO_CLEAN_DATA_FOLDER + "/eval_segments_cleaned.csv
 PATH_TO_CLEAN_UNBAL_TRAIN_FOLDER = PATH_TO_CLEAN_DATA_FOLDER + "/unbal_train/flute_didgeridoo"
 PATH_TO_CLEAN_BAL_TRAIN_FOLDER = PATH_TO_CLEAN_DATA_FOLDER + "/bal_train/flute_didgeridoo"
 PATH_TO_CLEAN_EVAL_FOLDER = PATH_TO_CLEAN_DATA_FOLDER + "/eval/flute_didgeridoo"
-CLEAN_LABELS_CSV = os.path.join(PATH_TO_DATA_FOLDER, "class_labels_indices_cleaned.csv")
+CLEAN_LABELS_CSV = os.path.join(PATH_TO_CLEAN_DATA_FOLDER, "class_labels_indices_cleaned.csv")
 CLEANED_CSV = pd.DataFrame()
 
 

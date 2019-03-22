@@ -69,6 +69,25 @@ def extract_sequence(tf_data):
     return sequence
 
 
+def extract_audio_embedding(ae_features):
+    """
+    Extract Audio Embedding as a List
+
+    :param ae_features: A TensorFlow feature list
+    :returns: A list of the audio embeddings as float values
+    """
+    audio_embeddings = []
+
+    sess = tf.InteractiveSession()      # Need to start this for .eval()
+    for second in range(0, len(ae_features)):
+        raw_embedding = tf.decode_raw(ae_features[second].bytes_list.value[0],tf.uint8)
+        float_embedding = tf.cast(raw_embedding, tf.float32).eval().tolist()
+        audio_embeddings.append(float_embedding)
+    sess.close()
+
+    return audio_embeddings
+
+
 def create_segment_dataframe(path_to_segment):
     """
     Create a dataframe for the segments in the given file

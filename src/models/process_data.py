@@ -24,7 +24,7 @@ import unittest
 
 module_path = os.path.dirname(os.path.abspath("src/helpers.py"))
 sys.path.insert(0, module_path + '/../../')
-from src.helpers import lookup_label_by_index, extract_sequence, convert_feature_key_to_string
+import src.helpers as help
 
 
 # Pooling stuff
@@ -40,26 +40,6 @@ PATH_TO_EVAL_FOLDER = PATH_TO_CLEAN_DATA_FOLDER + "/eval/flute_didgeridoo"
 
 
 
-
-def _extract_audio_embedding(ae_features):
-    """
-    Extract Audio Embedding as a List
-
-    :param ae_features: A TensorFlow feature list
-    :returns: A list of the audio embeddings as float values
-    """
-    audio_embeddings = []
-
-    sess = tf.InteractiveSession()      # Need to start this for .eval()
-    for second in range(0, len(ae_features)):
-        raw_embedding = tf.decode_raw(ae_features[second].bytes_list.value[0],tf.uint8)
-        float_embedding = tf.cast(raw_embedding, tf.float32).eval().tolist()
-        audio_embeddings.append(float_embedding)
-    sess.close()
-
-    return audio_embeddings
-
-
 def _convert_labels(protobuf):
     """
     Convert labels from google.protobuf.pyext._message.RepeatedScalarContainer
@@ -71,7 +51,7 @@ def _convert_labels(protobuf):
     """
     labels = []
     for i in range(0, len(protobuf)):
-        label_as_string = lookup_label_by_index(protobuf[i])
+        label_as_string = help.lookup_label_by_index(protobuf[i])
         labels.append(label_as_string)
     return labels
 
@@ -90,14 +70,14 @@ def _process_tensor_file(tf_file_path):
     raw_data = tf.python_io.tf_record_iterator(path=tf_file_path)
 
     for record in raw_data:
-        sequence = extract_sequence(record)
+        sequence = help.extract_sequence(record)
         video_id = sequence.context.feature["video_id"].bytes_list.value
 
         labels_protobuf = sequence.context.feature["labels"].int64_list.value
-        labels = convert_feature_key_to_string(labels_protobuf)
+        labels = help.convert_feature_key_to_string(labels_protobuf)
 
         audio_embedding_features = sequence.feature_lists.feature_list["audio_embedding"].feature
-        audio_embedding_list = _extract_audio_embedding(audio_embedding_features)
+        audio_embedding_list = help.extract_audio_embedding(audio_embedding_features)
 
         data[video_id[0]] = {
                             "labels": labels,
