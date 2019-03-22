@@ -16,7 +16,6 @@ import tqdm
 import argparse
 import os
 import sys
-import utils
 
 module_path = os.path.dirname(os.path.abspath("src/helpers.py"))
 sys.path.insert(0, module_path + '/../')
@@ -62,7 +61,7 @@ def read_from_clean_labels_csv():
 
 
 def _isolate_videos_with_desired_labels(csv_path, clean_label_codes):
-    all_segments = utils.create_segment_dataframe(csv_path)
+    all_segments = help.create_segment_dataframe(csv_path)
 
     clean_segments = pd.DataFrame()
 

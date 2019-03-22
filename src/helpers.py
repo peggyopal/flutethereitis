@@ -67,3 +67,12 @@ def extract_sequence(tf_data):
     sequence = tf.train.SequenceExample()
     sequence.ParseFromString(tf_data)
     return sequence
+
+
+def create_segment_dataframe(path_to_segment):
+    """
+    Create a dataframe for the segments in the given file
+    :param path_to_segment: The path to the file to load
+    :return: A pandas dataframe containing the data
+    """
+    return pd.read_csv(path_to_segment, sep=',\s+', header=2, engine="python")
