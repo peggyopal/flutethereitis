@@ -57,6 +57,11 @@ def convert_feature_key_to_string(protobuf):
     return features
 
 
+def extract_example(tf_data):
+
+    example = tf.train.Example.FromString(tf_data)
+    return example
+
 def extract_sequence(tf_data):
     """
     Extract the SequenceExample as a string from a given TensorFlow record
@@ -64,8 +69,7 @@ def extract_sequence(tf_data):
     :param data_dir: A TensorFlow record
     :returns: String value of SequenceExample of TensorFlow record
     """
-    sequence = tf.train.SequenceExample()
-    sequence.ParseFromString(tf_data)
+    sequence = tf.train.SequenceExample.FromString(tf_data)
     return sequence
 
 

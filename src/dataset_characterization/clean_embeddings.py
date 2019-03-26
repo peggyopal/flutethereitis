@@ -60,23 +60,27 @@ def _set_cleaned_csv(cleaned_csv_path):
         raise
 
 
-def _extract_cleaned_records(cleaned_labels, sequence):
-    cleaned_records = []
+def _extract_cleaned_records(cleaned_labels, record):
+    #cleaned_records = []
+    sequence = help.extract_example(record)
+    #sess = tf.InteractiveSession()
+    video_id = sequence.features.feature['video_id'].bytes_list.value[0].decode(encoding='UTF-8')
+    #sess.close()
 
-    sess = tf.InteractiveSession()
-    video_id = sequence.context.feature['video_id'].bytes_list.value[0].decode(encoding='UTF-8')
-    sess.close()
-
-    start_time_seconds = sequence.context.feature['start_time_seconds']
-    end_time_seconds = sequence.context.feature['end_time_seconds']
-
-    audio_embedding_features = sequence.feature_lists.feature_list["audio_embedding"].feature
-    audio_embedding_list = help.extract_audio_embedding(audio_embedding_features)
+    #start_time_seconds = sequence.context.feature['start_time_seconds']
+    #end_time_seconds = sequence.context.feature['end_time_seconds']
+    
+    start_time_seconds = sequence.features.feature['start_time_seconds']
+    end_time_seconds = sequence.features.feature['end_time_seconds']
+    
+    #audio_embedding_features = sequence.feature_lists.feature_list["audio_embedding"].feature
+    #audio_embedding_list = help.extract_audio_embedding(audio_embedding_features)
 
     hits = CLEANED_CSV[CLEANED_CSV["# YTID"].str.contains(video_id)]
 
     if not hits.empty:
-        example_label = list(np.asarray(sequence.context.feature['labels'].int64_list.value))
+        example_label = list(np.asarray(sequence.features.feature['labels'].int64_list.value))
+        tf_seq_example = help.extract_sequence(record)
 
         labels_to_keep = []
         for label in example_label:
@@ -102,15 +106,15 @@ def _extract_cleaned_records(cleaned_labels, sequence):
                     )
                     }
                 ),
-              feature_lists=sequence.feature_lists
+              feature_lists=tf_seq_example.feature_lists
 
         )
-        cleaned_records.append(updated_record)
 
-    return cleaned_records
+        return updated_record
+    else:
+        return None
 
-
-def _overwrite_tfrecord(cleaned_dir_path, tfrecord, cleaned_examples):
+def _overwrite_tfrecord(cleaned_dir_path, cleaned_examples):
     # Remove the old file
     os.remove(cleaned_dir_path)
     # Save it
@@ -129,13 +133,17 @@ def _process_tfrecords(tf_file_path):
     """
     cleaned_labels = pd.read_csv(CLEAN_LABELS_CSV)
     raw_data = tf.python_io.tf_record_iterator(path=tf_file_path)
+    
+    updated_record = []
 
     for record in raw_data:
-        sequence = help.extract_sequence(record)
-        updated_record = _extract_cleaned_records(cleaned_labels, sequence)
+        #sequence = help.extract_sequence(record)
+        extracted = _extract_cleaned_records(cleaned_labels, record)
+        if extracted is not None:
+            updated_record.append(extracted)
 
 
-    _overwrite_tfrecord(tf_file_path, record, updated_record)
+    _overwrite_tfrecord(tf_file_path, updated_record)
     # # Remove the old file
     # os.remove(os.path.join(cleaned_dir_path, tfrecord))
     # # Save it
@@ -180,10 +188,10 @@ def _segregate_tfrecords(data_dir_path, cleaned_csv_path, cleaned_dir_path):
 
     cleaned_tfrd = os.listdir(cleaned_dir_path)
     cleaned_tfrd_path = [os.path.join(cleaned_dir_path, x) for x in cleaned_tfrd if not x.startswith(".")]
-
+    sess = tf.Session()
     pool = mp.Pool(NUM_WORKERS)
     result = list(tqdm.tqdm(pool.imap(_process_tfrecords, cleaned_tfrd_path), total=len(cleaned_tfrd), unit="files"))
-
+    sess.close()
     return
 
 
