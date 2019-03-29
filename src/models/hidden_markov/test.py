@@ -14,7 +14,6 @@ import os
 
 module_path = os.path.dirname(os.path.abspath("src/models"))
 sys.path.insert(0, module_path + '/../')
-from src.models.process_data import get_eval, get_bal_train, get_unbal_train
 import src.models.hidden_markov.two_classifiers as two_classifiers
 
 from sklearn.model_selection import train_test_split
@@ -51,19 +50,10 @@ def create_arrays_of_audio_embeddings(dataset):
     return flute_audio_embeddings, didgerigoo_audio_embeddings
 
 
-def get_datasets(training_set):
-    if training_set == "unbal":
-        training = get_unbal_train()
-    else:
-        training = get_bal_train()
-    eval = get_eval()
-    return training, eval
-
-
-def hmm_run(training_set="bal"):
-    print("Get Datasets... ")
-    train_data, eval_data = get_datasets(training_set)
-    print("Datasets Got! \n")
+def hmm_run(train_data, eval_data):
+    # print("Get Datasets... ")
+    # train_data, eval_data = get_datasets(training_set)
+    # print("Datasets Got! \n")
 
     flute_aes, didgerigoo_aes = create_arrays_of_audio_embeddings(train_data)
 
@@ -76,8 +66,15 @@ def hmm_run(training_set="bal"):
 
     flute_hmm = two_classifiers.get_two_classifiers(np.array(flute_test), didgeridoo_train)
 
+
     predictions = flute_hmm.predict_proba(flute_test)
-    print(predictions)
+    print("predictions: ", predictions)
+
+    score = flute_hmm.score(flute_test)
+    print("flute hmm flute test score: ", score)
+
+    score = flute_hmm.score(didgeridoo_test)
+    print("flute hmm didgeridoo test score: ", score)
     # use hmm.predict_proba(X)
 
-hmm_run()
+# hmm_run()
