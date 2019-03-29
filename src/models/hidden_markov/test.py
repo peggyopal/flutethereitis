@@ -12,22 +12,21 @@ Description:
 import sys
 import os
 
-module_path = os.path.dirname(os.path.abspath("src/models"))
-sys.path.insert(0, module_path + '/../')
-import src.models.hidden_markov.two_classifiers as two_classifiers
 
+from hmmlearn import hmm
 from sklearn.model_selection import train_test_split
 
 import pandas as pd
 import matplotlib.pyplot as plt
 import numpy as np
+import warnings
 
 
 # Suppress TQDM warnings
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
 
 
-def create_arrays_of_audio_embeddings(dataset):
+def _create_arrays_of_audio_embeddings(dataset):
     flute_audio_embeddings = []
     didgerigoo_audio_embeddings = []
 
@@ -50,12 +49,21 @@ def create_arrays_of_audio_embeddings(dataset):
     return flute_audio_embeddings, didgerigoo_audio_embeddings
 
 
+def _fit_classifier(training_set):
+    model = hmm.GaussianHMM(n_components=2, algorithm='map')
+    with warnings.catch_warnings():
+        warnings.filterwarnings('ignore', category=DeprecationWarning)
+        model.fit(training_set)
+
+    return model
+
+
 def hmm_run(train_data, eval_data):
     # print("Get Datasets... ")
     # train_data, eval_data = get_datasets(training_set)
     # print("Datasets Got! \n")
 
-    flute_aes, didgerigoo_aes = create_arrays_of_audio_embeddings(train_data)
+    flute_aes, didgerigoo_aes = _create_arrays_of_audio_embeddings(train_data)
 
     flute_train, flute_test = train_test_split(flute_aes)
     didgeridoo_train, didgeridoo_test = train_test_split(didgerigoo_aes)
@@ -64,8 +72,8 @@ def hmm_run(train_data, eval_data):
     print("test: ", len(didgeridoo_test))
     print(len(didgerigoo_aes))
 
-    flute_hmm = two_classifiers.get_two_classifiers(np.array(flute_test), didgeridoo_train)
-
+    flute_hmm = _fit_classifier(flute_train)
+    didgeridoo_hmm = _fit_classifier(didgeridoo_train)
 
     predictions = flute_hmm.predict_proba(flute_test)
     print("predictions: ", predictions)
