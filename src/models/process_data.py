@@ -23,7 +23,7 @@ import tqdm         # progress bar
 import unittest
 
 module_path = os.path.dirname(os.path.abspath("src/helpers.py"))
-sys.path.insert(0, module_path + '/../../')
+sys.path.insert(0, module_path + '/../')
 import src.helpers as help
 
 
