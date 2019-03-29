@@ -19,7 +19,7 @@ def _fit_classifier(training_set):
     model = hmm.GaussianHMM(n_components=2, algorithm='map')
     with warnings.catch_warnings():
         warnings.filterwarnings('ignore', category=DeprecationWarning)
-        model.fit(flute_train)
+        model.fit(training_set)
 
     return model
 
