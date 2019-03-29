@@ -121,7 +121,7 @@ def _process_tensor_file(tf_file_path):
         audio_embedding_features = sequence.feature_lists.feature_list["audio_embedding"].feature
         audio_embedding_list = _extract_audio_embedding(audio_embedding_features)
 
-        data[video_id[0]] = {
+        data[str(video_id[0])] = {
                             "labels": labels,
                             "audio_embedding": audio_embedding_list
                         }

@@ -15,7 +15,7 @@ from hmmlearn import hmm
 import warnings
 
 
-def _flute_classifier(flute_train):
+def _fit_classifier(training_set):
     model = hmm.GaussianHMM(n_components=2, algorithm='map')
     with warnings.catch_warnings():
         warnings.filterwarnings('ignore', category=DeprecationWarning)
@@ -25,5 +25,5 @@ def _flute_classifier(flute_train):
 
 
 def get_two_classifiers(flute_train, didgeridoo_train):
-    flute_model = _flute_classifier(flute_train)
+    flute_model = _fit_classifier(flute_train)
     return flute_model
