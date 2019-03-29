@@ -9,7 +9,7 @@ Description: A file to run the classifier with HMM or RNN
 
 """
 
-from src.models.hidden_markov import test
+from src.models.hidden_markov import two_classifiers
 from src.models.process_data import get_eval, get_bal_train, get_unbal_train
 
 
@@ -78,4 +78,4 @@ if __name__ == "__main__":
 
     if model == 'HMM':
         print("Running HMM Classifier.... \n")
-        test.hmm_run(training, eval)
+        two_classifiers.hmm_run(training, eval)
