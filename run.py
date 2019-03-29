@@ -51,7 +51,7 @@ def load_datasets():
 
 if __name__ == "__main__":
     print("-------------------------------------------------------------------")
-    print("So you want to determine if there is a flute?")
+    print("wait. SETUP REQUIRED!")
 
     model = str(input("Enter model (either HMM or RNN): ")).upper()
     while model not in ["RNN", "HMM"]:
@@ -74,7 +74,7 @@ if __name__ == "__main__":
         get_new_datasets(training_set)
 
     training, eval = load_datasets()
-
+    print("-------------------------------------------------------------------")
 
     if model == 'HMM':
         print("Running HMM Classifier.... \n")
