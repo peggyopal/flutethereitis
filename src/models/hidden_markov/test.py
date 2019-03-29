@@ -41,46 +41,24 @@ def create_lists_of_audio_embeddings(dataset):
     return flute_audio_embeddings, didgerigoo_audio_embeddings
 
 
-def hmm_run():
-    print("Get Datasets... ")
-    # unbal_train_data = get_unbal_train()
-    bal_train_data = get_bal_train()
-    eval_data = get_eval()
-    print("Datasets Got! \n")
-    #
-    # print(len(bal_train_data))
-    # print(len(eval_data))
+def get_datasets(training_set):
+    if training_set == "unbal":
+        training = get_unbal_train()
+    else:
+        training = get_bal_train()
+    eval = get_eval()
+    return training, eval
 
-    # np.random.seed(42)
-    #
+
+def hmm_run(training_set="bal"):
+    print("Get Datasets... ")
+    train_data, eval_data = get_datasets(training_set)
+    print("Datasets Got! \n")
+
     model = hmm.GaussianHMM(n_components=2)
 
-    flute_aes_bal, didgerigoo_aes_bal = create_lists_of_audio_embeddings(bal_train_data)
+    flute_aes_train, didgerigoo_aes_train = create_lists_of_audio_embeddings(train_data)
 
 
-    print(len(didgerigoo_aes_bal))
-    print(len(flute_aes_bal))
-
-# if __name__ == "__main__":
-#     print("Get Datasets... ")
-#     # unbal_train_data = get_unbal_train()
-#     bal_train_data = get_bal_train()
-#     eval_data = get_eval()
-#     print("Datasets Got! \n")
-#     #
-#     # print(len(bal_train_data))
-#     # print(len(eval_data))
-#
-#     # np.random.seed(42)
-#     #
-#     model = hmm.GaussianHMM(n_components=2)
-#
-#     flute_aes_bal, didgerigoo_aes_bal = create_lists_of_audio_embeddings(bal_train_data)
-#
-#
-#     print(len(didgerigoo_aes_bal))
-#     print(len(flute_aes_bal))
-#
-#     # X, Z = model.sample(100)
-#     #
-#     # print(Z)
+    print(len(didgerigoo_aes_train))
+    print(len(flute_aes_train))
