@@ -15,8 +15,8 @@ import os
 module_path = os.path.dirname(os.path.abspath("src/models"))
 sys.path.insert(0, module_path + '/../')
 from src.models.process_data import get_eval, get_bal_train, get_unbal_train
+import src.models.hidden_markov.two_classifiers as two_classifiers
 
-from hmmlearn import hmm
 from sklearn.model_selection import train_test_split
 
 import pandas as pd
@@ -28,7 +28,7 @@ import numpy as np
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
 
 
-def create_lists_of_audio_embeddings(dataset):
+def create_arrays_of_audio_embeddings(dataset):
     flute_audio_embeddings = []
     didgerigoo_audio_embeddings = []
 
@@ -39,6 +39,14 @@ def create_lists_of_audio_embeddings(dataset):
 
             if 'Didgeridoo' in video_id_features[video_id]['labels']:
                 didgerigoo_audio_embeddings.append(video_id_features[video_id]['audio_embedding'])
+
+    flute_audio_embeddings = np.array(flute_audio_embeddings)
+    nsamples, nx, ny = flute_audio_embeddings.shape
+    flute_audio_embeddings = flute_audio_embeddings.reshape((nsamples,nx*ny))
+
+    didgerigoo_audio_embeddings = np.array(didgerigoo_audio_embeddings)
+    nsamples, nx, ny = didgerigoo_audio_embeddings.shape
+    didgerigoo_audio_embeddings = didgerigoo_audio_embeddings.reshape((nsamples,nx*ny))
 
     return flute_audio_embeddings, didgerigoo_audio_embeddings
 
@@ -57,7 +65,7 @@ def hmm_run(training_set="bal"):
     train_data, eval_data = get_datasets(training_set)
     print("Datasets Got! \n")
 
-    flute_aes, didgerigoo_aes = create_lists_of_audio_embeddings(train_data)
+    flute_aes, didgerigoo_aes = create_arrays_of_audio_embeddings(train_data)
 
     flute_train, flute_test = train_test_split(flute_aes)
     didgeridoo_train, didgeridoo_test = train_test_split(didgerigoo_aes)
@@ -66,8 +74,10 @@ def hmm_run(training_set="bal"):
     print("test: ", len(didgeridoo_test))
     print(len(didgerigoo_aes))
 
+    flute_hmm = two_classifiers.get_two_classifiers(np.array(flute_test), didgeridoo_train)
 
-    # model = hmm.GaussianHMM(n_components=2, algorithm='map')
-
-
+    predictions = flute_hmm.predict_proba(flute_test)
+    print(predictions)
     # use hmm.predict_proba(X)
+
+hmm_run()
