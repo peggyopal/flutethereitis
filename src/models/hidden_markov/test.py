@@ -9,17 +9,19 @@ Description:
 
 """
 
-import sys, os
-import numpy as np
-
-from hmmlearn import hmm
+import sys
+import os
 
 module_path = os.path.dirname(os.path.abspath("src/models"))
 sys.path.insert(0, module_path + '/../')
 from src.models.process_data import get_eval, get_bal_train, get_unbal_train
 
+from hmmlearn import hmm
+from sklearn.model_selection import train_test_split
+
 import pandas as pd
 import matplotlib.pyplot as plt
+import numpy as np
 
 
 # Suppress TQDM warnings
@@ -55,10 +57,17 @@ def hmm_run(training_set="bal"):
     train_data, eval_data = get_datasets(training_set)
     print("Datasets Got! \n")
 
-    model = hmm.GaussianHMM(n_components=2)
+    flute_aes, didgerigoo_aes = create_lists_of_audio_embeddings(train_data)
 
-    flute_aes_train, didgerigoo_aes_train = create_lists_of_audio_embeddings(train_data)
+    flute_train, flute_test = train_test_split(flute_aes)
+    didgeridoo_train, didgeridoo_test = train_test_split(didgerigoo_aes)
+
+    print("train: ", len(didgeridoo_train))
+    print("test: ", len(didgeridoo_test))
+    print(len(didgerigoo_aes))
 
 
-    print(len(didgerigoo_aes_train))
-    print(len(flute_aes_train))
+    # model = hmm.GaussianHMM(n_components=2, algorithm='map')
+
+
+    # use hmm.predict_proba(X)
