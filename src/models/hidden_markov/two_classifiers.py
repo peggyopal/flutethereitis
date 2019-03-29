@@ -16,14 +16,10 @@ import warnings
 
 
 def _flute_classifier(flute_train):
-    # lengths = []
-    # for values in flute_train:
-    #     lengths.append(len(values))
-
     model = hmm.GaussianHMM(n_components=2, algorithm='map')
     with warnings.catch_warnings():
         warnings.filterwarnings('ignore', category=DeprecationWarning)
-        model.fit(flute_train)#, lengths)
+        model.fit(flute_train)
 
     return model
 
