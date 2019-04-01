@@ -97,6 +97,18 @@ def _convert_labels(protobuf):
         labels.append(label_as_string)
     return labels
 
+def _convert_labels_indices(protobuf):
+    """
+    Get the label indices from the protobuf
+    
+    oogle.protobuf.pyext._message.RepeatedScalarContainer of
+                     labels extracted from TensorFlow SequenceExample
+    :returns: a list of integer values for labels
+    """
+    labels = []
+    for i in range(0, len(protobuf)):
+        labels.append(protobuf[i])
+    return labels
 
 def _process_tensor_file(tf_file_path):
     """
@@ -123,7 +135,8 @@ def _process_tensor_file(tf_file_path):
 
         data[video_id[0]] = {
                             "labels": labels,
-                            "audio_embedding": audio_embedding_list
+                            "audio_embedding": audio_embedding_list,
+                            "label_indices": _convert_labels_indices(labels_protobuf)
                         }
 
     return data
@@ -168,7 +181,6 @@ def get_eval():
     :returns: A dictionary representation of the data set
     """
     return _process_data(PATH_TO_EVAL_FOLDER)
-
 
 # # TESTING STUFF
 # if __name__ == "__main__":
