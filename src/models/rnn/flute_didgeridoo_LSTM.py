@@ -8,80 +8,166 @@ Date: 29-03-2019
 Description: A LSTM model to classify flutes and didgeridoos from audio features taken from Google Audioset
 
 """
+import numpy as np
+from keras.models import Sequential
+from keras.layers import Dense
+from keras.layers import LSTM
+from keras.layers import TimeDistributed
+from keras.layers import Activation
+from keras.layers import Input
+from keras.layers.embeddings import Embedding
+from keras.preprocessing import sequence
+from keras.utils.np_utils import to_categorical
 
-import tensorflow as tf
 
-class RNN():
+class FluteDidgeridooBatchGenerator(object):
 
-    def __init__(self, train_data, test_data, eval_data):
+    def __init__(self, data, num_steps, batch_size, classes, skip_step=5):
         """
-        Creates a RNN for classifying flutes and didgeridoos
+        Initialize a generator for our data.  This will allow us to shape the data in a way that the LSTM network will
+        accept later
         
-        :param train_data: The training data as (data, label) tuple, where data is in in the form of a 3-dimensional list (num_samples, 10, 128), where num
-                           samples is the number of samples in the dataset.  Each of the samples will have a list of 10 timesteps, each
-                           containing a list of 128 features
-        :param test_data: The testing data, in the same form as train_data
-        :param eval_data: The evaluation data, in the same form as train_data
+        :param data: The data dictionary that we want to use in the model
+        :param num_steps: The number of time steps we will put into the network
+        :param batch_size: The size of batches to use
+        :param classes: The number of possible outputs of the network
+        :param skip_step=5: 
         :returns: None
         """
-        self.train_data = train_data
-        self.test_data = test_data
-        self.eval_data = eval_data
-        self.num_features = 128
-        self.num_timesteps = 10
-        self.num_classes = 2
-        self.lstm_size = 128
-        self.num_epochs = 10
-        self.batch_size = 1
-        self.model = self._create_model()
-
-    def _create_model(self):
         
-        # Create a layer with two outputs
-        layer = {'weights':tf.Variable(tf.random_normal([self.lstm_size, self.num_classes])),
-                'biases':tf.Variable(tf.random_normal([self.num_classes]))}
+       
+
+        self.data = self._mush_data_into_list(data)
+
+        if len(self.data[0]) < batch_size:
+            raise ValueError("Batch size %d too large for data size %d" % (batch_size, len(self.data[0])))
+
+        self.num_steps = num_steps
+        self.batch_size = batch_size
+        self.classes = classes
+
+        self.current_idx = 0
         
-        # Create a graph input for the data of size [none, 10, 128]
-        x = tf.placeholder(tf.float32, [self.num_timesteps, self.num_features])
+        # TODO: I think we will want to make this equal to num_steps in our case
+        self.skip_step = skip_step
+
+    def _mush_data_into_list(self, data):
+
+        out_data = ([], [])
+
+        for video in data.keys():
+            embeddings = data[video]["audio_embedding"]
+            labels = data[video]["labels"]
+            
+            out_data[0].append(embeddings)
+            out_data[1].append(labels)
+
+        return out_data
+
+    def convert_label_string_to_id(self, string):
+
+        if string.lower() == "flute":
+            return 0
+        else:
+            return 1
+
+    def generate(self):
+        """
+        Generates the next batch of values for the input data
         
-        # Create an LSTM cell
-        lstm_cell = tf.contrib.rnn.BasicLSTMCell(self.lstm_size)
+        :returns: Yields the data and targets as an array
+        """
+        x = np.zeros((self.batch_size, self.num_steps, 128))
+       # y = np.zeros((self.batch_size, self.num_steps, self.classes))
+        y = np.zeros((self.batch_size, self.classes))
         
-        state = lstm_cell.zero_state(self.num_timesteps, dtype=tf.float32)
+        while True:
+            for i in range(self.batch_size):
+                #if self.current_idx + self.num_steps > len(self.data[0]):
+                 #   self.current_idx = 0
+                
+                current_sample = np.asarray(self.data[0][self.current_idx])
+                num_timesteps = current_sample.shape[0] 
 
-        outputs, state = lstm_cell(x, state)
+                if num_timesteps < self.num_steps:
+                    x[i] = np.concatenate(num_timesteps, np.zeros((self.num_steps - num_timesteps, 128), axis=0))
+                else:
+                    x[i] = np.asarray(self.data[0][self.current_idx])
 
-        output = tf.matmul(outputs, layer['weights']) + layer['biases']
+                #temp_y = self.data[1][i]
 
-        return output
+                # Convert temp_y to one-hot representation
+                #y[i, :, :] = to_categorical(temp_y, num_classes=self.classes)
+                
+                temp_y = self.convert_label_string_to_id(self.data[1][i][0])
 
-    def train(self):
-        x = tf.placeholder(tf.float32, [ self.num_timesteps, self.num_features])
-        y = tf.placeholder(tf.float32)
+                self.current_idx += 1
 
-        cost = tf.reduce_sum(tf.square(y - self.model, name="cost"))
-        optimizer = tf.train.AdamOptimizer().minimize(cost)
+                if self.current_idx > len(self.data[0]) - 1:
+                    self.current_idx = 0
+                
+                y[i] = to_categorical(temp_y) 
+                
 
-        with tf.Session() as sess:
-            sess.run(tf.initialize_all_variables())
+            yield x, y
 
-            for epoch in range(self.num_epochs):
-                epoch_loss = 0
 
-                # TODO: Batches
-                for i in range(len(self.train_data[0])):
-                    epoch_x = self.train_data[0][i]
-                    epoch_y = self.train_data[1][i]
-                    
-                    print(len(epoch_x), epoch_y)
-                    _, c = sess.run([optimizer, cost], feed_dict={x: epoch_x, y: epoch_y})
 
-                    epoch_loss += c
+class FDLSTM(object):
 
-                print("Epoch, ", epoch, " completed out of ", self.num_epochs, " loss: ", epoch_loss)
+    def __init__(self, classes, hidden_size, num_steps, use_dropout=False, checkpoints=False, checkpoint_path=None):
 
-            correct = tf.equal(tf.argmax(self.model, 1), tf.argmax(y, 1))
+        self.classes = classes
+        self.hidden_size = hidden_size
+        self.num_steps = num_steps
+        self.use_dropout = use_dropout
+        self.checkpoints = checkpoints
+        
+        if checkpoints:
+            
+            if checkpoint_path == None:
+                raise ValueError("Checkpoint path cannot be empty if you want to use checkpoints")
 
-            accuracy = tf.reduce_mean(tf.cast(correct, 'float'))
-            print("Accuracy: ", accuracy.eval({x:self.eval_data[0], y:self.eval_data[1]}))
+            self.checkpointer = ModelCheckpoint(filepath=checkpoint_path + "/model-{epoch:02d}.hdf5", verbose=1)
+
+        self.model = self._build_model()
+
+    def _build_model(self):
+
+        model = Sequential()
+        #model.add(Embedding(self.classes, self.hidden_size, input_length=self.num_steps))
+        model.add(LSTM(self.classes, return_sequences=False, input_shape=(self.num_steps, self.hidden_size)))
+        
+        if self.use_dropout:
+            model.add(Dropout(0.5))
+        
+        #self.model.add(TimeDistributed(Dense(self.classes)))
+
+        #model.add(Activation('softmax'))
+
+        model.compile(loss='categorical_crossentropy', optimizer='adam', metrics=['categorical_accuracy'])
+        model.summary() 
+        return model
+
+    def fit(self, training_data_generator, validation_data_generator, num_epochs):
+
+        if self.checkpoints:
+            self.model.fit_generator(training_data_generator.generate(),
+                steps_per_epoch=len(training_data_generator.data[0])//(training_data_generator.batch_size),
+                num_epochs=num_epochs,
+                validation_data=validation_data_generator.generate(), 
+                validation_steps=len(validation_data_generator.data[0])//(validation_data_generator.batch_size),
+                callbacks=[self.checkpointer])
+        else:
+            self.model.fit_generator(training_data_generator.generate(),
+                len(training_data_generator.data[0])//(training_data_generator.batch_size),
+                num_epochs,
+                validation_data=validation_data_generator.generate(), 
+                validation_steps=len(validation_data_generator.data[0])//(validation_data_generator.batch_size)
+                )
+
+    def predict(self, input):
+
+        return self.model.predict(input)
+
 
