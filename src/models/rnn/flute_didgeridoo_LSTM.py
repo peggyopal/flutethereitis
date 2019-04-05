@@ -79,13 +79,10 @@ class FluteDidgeridooBatchGenerator(object):
         :returns: Yields the data and targets as an array
         """
         x = np.zeros((self.batch_size, self.num_steps, 128))
-       # y = np.zeros((self.batch_size, self.num_steps, self.classes))
-        y = np.zeros((self.batch_size, self.classes))
+        y = np.zeros((self.batch_size, 1))
         
         while True:
             for i in range(self.batch_size):
-                #if self.current_idx + self.num_steps > len(self.data[0]):
-                 #   self.current_idx = 0
                 
                 current_sample = np.asarray(self.data[0][self.current_idx])
                 num_timesteps = current_sample.shape[0] 
@@ -95,20 +92,17 @@ class FluteDidgeridooBatchGenerator(object):
                 else:
                     x[i] = current_sample
 
-                #temp_y = self.data[1][i]
-
-                # Convert temp_y to one-hot representation
-                #y[i, :, :] = to_categorical(temp_y, num_classes=self.classes)
                 
-                temp_y = self.convert_label_string_to_id(self.data[1][i][0])
-
+                #print(self.data[1][i][0])
+                #temp_y = self.convert_label_string_to_id(self.data[1][i][0])
+                #print(temp_y)
                 self.current_idx += 1
 
                 if self.current_idx > len(self.data[0]) - 1:
                     self.current_idx = 0
                 
-                y[i] = to_categorical(temp_y) 
-                
+                #y[i] = to_categorical(temp_y)
+                y[i] = self.convert_label_string_to_id(self.data[1][self.current_idx][0])
 
             yield x, y
 
@@ -136,20 +130,15 @@ class FDLSTM(object):
     def _build_model(self):
 
         model = Sequential()
-        #model.add(Embedding(self.classes, self.hidden_size, input_length=self.num_steps))
-        model.add(LSTM(self.classes, return_sequences=True, input_shape=(self.num_steps, self.hidden_size)))
+        model.add(LSTM(1, return_sequences=True, input_shape=(self.num_steps, self.hidden_size)))
         model.add(Flatten())
-        model.add(Dense(self.classes))
+        model.add(Dense(1))
         
         if self.use_dropout:
             model.add(Dropout(0.5))
 
-        #model.add(TimeDistributed(Dense(self.classes, activation='softmax')))   
-        #self.model.add(TimeDistributed(Dense(self.classes)))
 
-        #model.add(Activation('softmax'))
-
-        model.compile(loss='categorical_crossentropy', optimizer='adam', metrics=['categorical_accuracy'])
+        model.compile(loss='binary_crossentropy', optimizer='adam', metrics=['binary_accuracy'])
         model.summary() 
         return model
 

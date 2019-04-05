@@ -88,16 +88,6 @@ for score, label in zip(score, model.model.metrics_names):
     print("%s: %.2f" % (label, score))
 
 
-#num_correct = 0
-#
-#for i in range(len(eval_data_generator.data[0])):
-#    data = next(eval_data_generator.generate())
-#    prediction = model.predict(data[0])
-#    
-#    print(prediction)
-#    if np.array_equal(prediction, data[1]):
-#        num_correct += 1
-#
-#print("Evaluation Accuracy: %.2f%%" % (num_correct/len(eval_data_generator.data[0]))) 
-#
-# TODO: Evaluate the trained model
+for thing in eval_data_generator.generate():
+    print(thing[1])
+
