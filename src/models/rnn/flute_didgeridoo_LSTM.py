@@ -15,6 +15,7 @@ from keras.layers import LSTM
 from keras.layers import TimeDistributed
 from keras.layers import Activation
 from keras.layers import Input
+from keras.layers import Flatten
 from keras.layers.embeddings import Embedding
 from keras.preprocessing import sequence
 from keras.utils.np_utils import to_categorical
@@ -90,9 +91,9 @@ class FluteDidgeridooBatchGenerator(object):
                 num_timesteps = current_sample.shape[0] 
 
                 if num_timesteps < self.num_steps:
-                    x[i] = np.concatenate(num_timesteps, np.zeros((self.num_steps - num_timesteps, 128), axis=0))
+                    x[i] = np.concatenate(current_sample, np.zeros((self.num_steps - num_timesteps, 128)))
                 else:
-                    x[i] = np.asarray(self.data[0][self.current_idx])
+                    x[i] = current_sample
 
                 #temp_y = self.data[1][i]
 
@@ -136,11 +137,14 @@ class FDLSTM(object):
 
         model = Sequential()
         #model.add(Embedding(self.classes, self.hidden_size, input_length=self.num_steps))
-        model.add(LSTM(self.classes, return_sequences=False, input_shape=(self.num_steps, self.hidden_size)))
+        model.add(LSTM(self.classes, return_sequences=True, input_shape=(self.num_steps, self.hidden_size)))
+        model.add(Flatten())
+        model.add(Dense(self.classes))
         
         if self.use_dropout:
             model.add(Dropout(0.5))
-        
+
+        #model.add(TimeDistributed(Dense(self.classes, activation='softmax')))   
         #self.model.add(TimeDistributed(Dense(self.classes)))
 
         #model.add(Activation('softmax'))
@@ -165,6 +169,9 @@ class FDLSTM(object):
                 validation_data=validation_data_generator.generate(), 
                 validation_steps=len(validation_data_generator.data[0])//(validation_data_generator.batch_size)
                 )
+    
+    def evaluate_generator(self, generator, length):
+        return self.model.evaluate_generator(generator.generate(), length)
 
     def predict(self, input):
 

@@ -60,6 +60,7 @@ def convert_list_of_dicts_to_dict(data):
     return output
 
 # split data into train and valid
+
 #train_data = pdata.get_unbal_train()
 train_data = pdata.get_bal_train()
 
@@ -79,16 +80,24 @@ model.fit(train_data_generator, valid_data_generator, NUM_EPOCHS)
 eval_data = convert_list_of_dicts_to_dict(eval_data)
 eval_data_generator = FDLSTM.FluteDidgeridooBatchGenerator(eval_data, TIME_STEPS, 1, NUM_CLASSES, skip_step=10)
 
-num_correct = 0
+#y_pred = model.predict(eval_data_generator)
 
-for i in range(len(eval_data_generator.data[0])):
-    data = next(eval_data_generator.generate())
-    prediction = model.predict(data[0])
-    
+score = model.evaluate_generator(eval_data_generator, len(eval_data_generator.data[0])/eval_data_generator.batch_size)
 
-    if np.array_equal(prediction, data[1]):
-        num_correct += 1
+for score, label in zip(score, model.model.metrics_names):
+    print("%s: %.2f" % (label, score))
 
-print("Evaluation Accuracy: %.2f%%" % (num_correct/len(eval_data_generator.data[0]))) 
 
+#num_correct = 0
+#
+#for i in range(len(eval_data_generator.data[0])):
+#    data = next(eval_data_generator.generate())
+#    prediction = model.predict(data[0])
+#    
+#    print(prediction)
+#    if np.array_equal(prediction, data[1]):
+#        num_correct += 1
+#
+#print("Evaluation Accuracy: %.2f%%" % (num_correct/len(eval_data_generator.data[0]))) 
+#
 # TODO: Evaluate the trained model
