@@ -33,7 +33,7 @@ SKIP_STEP=10
 FEATURE_LENGTH = 128
 
 # The number of epochs to train for
-NUM_EPOCHS = 5
+NUM_EPOCHS = 50
 
 def train_test_split(data):
 
@@ -61,8 +61,8 @@ def convert_list_of_dicts_to_dict(data):
 
 # split data into train and valid
 
-#train_data = pdata.get_unbal_train()
-train_data = pdata.get_bal_train()
+train_data = pdata.get_unbal_train()
+#train_data = pdata.get_bal_train()
 
 train_data, valid_data = train_test_split(train_data)
 
@@ -88,6 +88,6 @@ for score, label in zip(score, model.model.metrics_names):
     print("%s: %.2f" % (label, score))
 
 
-for thing in eval_data_generator.generate():
-    print(thing[1])
+#for thing in eval_data_generator.generate():
+#    print(thing[1])
 

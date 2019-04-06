@@ -88,7 +88,8 @@ class FluteDidgeridooBatchGenerator(object):
                 num_timesteps = current_sample.shape[0] 
 
                 if num_timesteps < self.num_steps:
-                    x[i] = np.concatenate(current_sample, np.zeros((self.num_steps - num_timesteps, 128)))
+                    x[i, :num_timesteps] = current_sample
+                    x[i, num_timesteps:] = np.zeros((self.num_steps - num_timesteps, 128))
                 else:
                     x[i] = current_sample
 
