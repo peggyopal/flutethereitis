@@ -32,19 +32,18 @@ def _create_arrays_of_audio_embeddings(dataset):
 
     for video_id_features in dataset:
         for video_id in video_id_features:
+            audio_embeddings = sum(video_id_features[video_id]['audio_embedding'], [])
+            if len(audio_embeddings) != 1280:
+                audio_embeddings = audio_embeddings + ([0] * (1280 - len(audio_embeddings)))
+
             if 'Flute' in video_id_features[video_id]['labels']:
-                flute_audio_embeddings.append(video_id_features[video_id]['audio_embedding'])
+                flute_audio_embeddings.append(audio_embeddings)
 
             if 'Didgeridoo' in video_id_features[video_id]['labels']:
-                didgerigoo_audio_embeddings.append(video_id_features[video_id]['audio_embedding'])
+                didgerigoo_audio_embeddings.append(audio_embeddings)#
 
     flute_audio_embeddings = np.array(flute_audio_embeddings)
-    nsamples, nx, ny = flute_audio_embeddings.shape
-    flute_audio_embeddings = flute_audio_embeddings.reshape((nsamples,nx*ny))
-
     didgerigoo_audio_embeddings = np.array(didgerigoo_audio_embeddings)
-    nsamples, nx, ny = didgerigoo_audio_embeddings.shape
-    didgerigoo_audio_embeddings = didgerigoo_audio_embeddings.reshape((nsamples,nx*ny))
 
     return flute_audio_embeddings, didgerigoo_audio_embeddings
 
@@ -63,14 +62,15 @@ def hmm_run(train_data, eval_data):
     # train_data, eval_data = get_datasets(training_set)
     # print("Datasets Got! \n")
 
-    flute_aes, didgerigoo_aes = _create_arrays_of_audio_embeddings(train_data)
+    flute_aes, didgeridoo_aes = _create_arrays_of_audio_embeddings(train_data)
+    flute_eval, didgeridoo_eval = _create_arrays_of_audio_embeddings(eval_data)
 
     flute_train, flute_test = train_test_split(flute_aes)
-    didgeridoo_train, didgeridoo_test = train_test_split(didgerigoo_aes)
+    didgeridoo_train, didgeridoo_test = train_test_split(didgeridoo_aes)
 
     print("train: ", len(didgeridoo_train))
     print("test: ", len(didgeridoo_test))
-    print(len(didgerigoo_aes))
+    print(len(didgeridoo_aes))
 
     flute_hmm = _fit_classifier(flute_train)
     didgeridoo_hmm = _fit_classifier(didgeridoo_train)
@@ -78,11 +78,23 @@ def hmm_run(train_data, eval_data):
     predictions = flute_hmm.predict_proba(flute_test)
     print("predictions: ", predictions)
 
-    score = flute_hmm.score(flute_test)
-    print("flute hmm flute test score: ", score)
+    predictions = didgeridoo_hmm.predict_proba(didgeridoo_test)
+    print("predictions: ", predictions)
 
-    score = flute_hmm.score(didgeridoo_test)
-    print("flute hmm didgeridoo test score: ", score)
-    # use hmm.predict_proba(X)
+    score = flute_hmm.score(flute_eval)
+    print("flute_hmm flute_eval score: ", score)
+    score = flute_hmm.score(didgeridoo_eval)
+    print("flute_hmm didgeridoo_eval score: ", score)
 
-# hmm_run()
+    score = didgeridoo_hmm.score(flute_eval)
+    print("didgeridoo_hmm flute_eval score: ", score)
+    score = didgeridoo_hmm.score(didgeridoo_eval)
+    print("didgeridoo_hmm didgeridoo_eval score: ", score)
+    # # use hmm.predict_proba(X)
+
+# import json
+# TRAIN_JSON = "data/clean_data/train_data_json.txt"
+# EVAL_JSON = "data/clean_data/eval_data_json.txt"
+# training = json.load(open(TRAIN_JSON))
+# eval = json.load(open(EVAL_JSON))
+# hmm_run(training, eval)
