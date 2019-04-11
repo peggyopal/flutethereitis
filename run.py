@@ -61,14 +61,16 @@ if __name__ == "__main__":
         print("There is another way to run RNN, please refer to the documentation")
         exit()
 
-    training_set = str(input("Enter training set (either bal or unbal): ")).lower()
-    while training_set not in ["bal", "unbal"]:
-        training_set = str(input("Enter training set (either bal or unbal): ")).lower()
-
     prev_data_exists = check_for_old_data()
-    new_data = str(input("Do we want new data? Or use the previous data: [y/n] ")).lower()
-    while new_data not in ["y", "n"]:
-        training_set = str(input("It's a yes [y] or no [n] question: ")).lower()
+    if prev_data_exists:
+        new_data = str(input("Do you want to load new data? (This would over write any previous data) [y/n] ")).lower()
+        while new_data not in ["y", "n"]:
+            new_data = str(input("It's a yes [y] or no [n] question: ")).lower()
+
+    if not prev_data_exists or new_data == "y":
+        training_set = str(input("Enter training set (either bal or unbal): ")).lower()
+        while training_set not in ["bal", "unbal"]:
+            training_set = str(input("Enter training set (either bal or unbal): ")).lower()
 
     if new_data == "y" or not prev_data_exists:
         get_new_datasets(training_set)
