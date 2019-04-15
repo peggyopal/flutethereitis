@@ -16,6 +16,8 @@ from keras.layers import TimeDistributed
 from keras.layers import Activation
 from keras.layers import Input
 from keras.layers import Flatten
+from keras.layers import Dropout
+from keras.layers import Bidirectional
 from keras.layers.embeddings import Embedding
 from keras.preprocessing import sequence
 from keras.utils.np_utils import to_categorical
@@ -93,16 +95,11 @@ class FluteDidgeridooBatchGenerator(object):
                 else:
                     x[i] = current_sample
 
-                
-                #print(self.data[1][i][0])
-                #temp_y = self.convert_label_string_to_id(self.data[1][i][0])
-                #print(temp_y)
                 self.current_idx += 1
 
                 if self.current_idx > len(self.data[0]) - 1:
                     self.current_idx = 0
                 
-                #y[i] = to_categorical(temp_y)
                 y[i] = self.convert_label_string_to_id(self.data[1][self.current_idx][0])
 
             yield x, y
@@ -131,29 +128,41 @@ class FDLSTM(object):
     def _build_model(self):
 
         model = Sequential()
-        model.add(LSTM(1, return_sequences=True, input_shape=(self.num_steps, self.hidden_size)))
-        model.add(Flatten())
-        model.add(Dense(1))
-        
+        model.add(Bidirectional(LSTM(10, return_sequences=True), input_shape=(self.num_steps, self.hidden_size)))
+       
         if self.use_dropout:
             model.add(Dropout(0.5))
 
 
-        model.compile(loss='binary_crossentropy', optimizer='adam', metrics=['binary_accuracy'])
+        model.add(Bidirectional(LSTM(10, return_sequences=True)))
+        
+        if self.use_dropout:
+            model.add(Dropout(0.5))
+
+        model.add(Bidirectional(LSTM(10)))
+        
+        #model.add(Flatten())
+        
+        if self.use_dropout:
+            model.add(Dropout(0.5))
+        
+        model.add(Dense(1, activation="sigmoid"))
+
+        model.compile(loss='binary_crossentropy', optimizer='adam', metrics=['accuracy'])
         model.summary() 
         return model
 
     def fit(self, training_data_generator, validation_data_generator, num_epochs):
 
         if self.checkpoints:
-            self.model.fit_generator(training_data_generator.generate(),
+            return self.model.fit_generator(training_data_generator.generate(),
                 steps_per_epoch=len(training_data_generator.data[0])//(training_data_generator.batch_size),
                 num_epochs=num_epochs,
                 validation_data=validation_data_generator.generate(), 
                 validation_steps=len(validation_data_generator.data[0])//(validation_data_generator.batch_size),
                 callbacks=[self.checkpointer])
         else:
-            self.model.fit_generator(training_data_generator.generate(),
+            return self.model.fit_generator(training_data_generator.generate(),
                 len(training_data_generator.data[0])//(training_data_generator.batch_size),
                 num_epochs,
                 validation_data=validation_data_generator.generate(), 
@@ -167,4 +176,12 @@ class FDLSTM(object):
 
         return self.model.predict(input)
 
+    def from_json(self, path):
+        raise ValueError("Kyle you need to implement this")
 
+    def to_json(self):
+        return self.model.to_json()
+
+    def predict_generator(self, generator, length):
+
+        return self.model.predict_generator(generator.generate(), length)
