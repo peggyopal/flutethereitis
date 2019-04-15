@@ -39,7 +39,7 @@ SKIP_STEP=10
 FEATURE_LENGTH = 128
 
 # The number of epochs to train for
-NUM_EPOCHS = 20
+NUM_EPOCHS = 10
 
 
 INTERMEDIATE_OUTPUT_FOLDER = os.path.join("intermediate_results", "rnn")
@@ -232,7 +232,8 @@ def _evaluate_model(trained_models, eval_data, out_path):
     print("Confusion Matrix: ")
     print(conf_matrix)
    
-    intermediate_results = {"predictions": avg_pred, "prediction_probs": avg_pred_probs, "confusion_matrix": conf_matrix}
+    intermediate_results = {"predictions": avg_pred, "prediction_probs": avg_pred_probs, "confusion_matrix":
+    conf_matrix, "evaluation_accuracy": np.asarray([accuracy])}
 
     _save_intermediate_results(intermediate_results, out_path)
 

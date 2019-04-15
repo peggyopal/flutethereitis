@@ -21,7 +21,7 @@ from keras.layers import Bidirectional
 from keras.layers.embeddings import Embedding
 from keras.preprocessing import sequence
 from keras.utils.np_utils import to_categorical
-
+from keras import regularizers
 
 class FluteDidgeridooBatchGenerator(object):
 
@@ -128,7 +128,7 @@ class FDLSTM(object):
     def _build_model(self):
 
         model = Sequential()
-        model.add(Bidirectional(LSTM(10, return_sequences=True), input_shape=(self.num_steps, self.hidden_size)))
+        model.add(Bidirectional(LSTM(10, return_sequences=True, kernel_regularizer=regularizers.l2(0.01)), input_shape=(self.num_steps, self.hidden_size)))
        
         if self.use_dropout:
             model.add(Dropout(0.5))
