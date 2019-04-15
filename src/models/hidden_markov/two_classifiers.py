@@ -114,19 +114,6 @@ def _classify(dataset, fHMM, dHMM):
                 else:
                     false_positive += 1
 
-            # flute_proba = fHMM.predict(audio_embedding, lengths=[128])
-            # didgeridoo_proba = dHMM.predict(audio_embedding)
-
-            # if sum(flute_proba) > sum(didgeridoo_proba):
-            #     if label[0] == 'Flute':
-            #         true_positive += 1
-            #     else:
-            #         false_negative += 1
-            # elif sum(flute_proba) < sum(didgeridoo_proba):
-            #     if label[0] == 'Didgeridoo':
-            #         true_negative += 1
-            #     else:
-            #         false_positive += 1
 
     return (true_positive, false_negative, true_negative, false_positive, idk)
 
@@ -139,9 +126,9 @@ def _compute_precision_recall_accuracy(classifications):
 
     N = true_negative + false_negative + false_positive + true_positive
 
-    precision = true_positive / (true_positive + false_positive) if true_negative != 0 and false_positive != 0 else "NaN"
-    recall = true_positive / (true_positive + false_negative) if false_negative != 0 and true_positive != 0 else "NaN"
-    accuracy = true_positive / (N) if N != 0 else "NaN"
+    precision = true_positive / (true_positive + false_positive) if true_negative != 0 or false_positive != 0 else "NaN"
+    recall = true_positive / (true_positive + false_negative) if false_negative != 0 or true_positive != 0 else "NaN"
+    accuracy = (true_positive + true_negative) / (N) if N != 0 else "NaN"
 
     return precision, recall, accuracy
 
